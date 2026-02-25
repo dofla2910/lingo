@@ -1,0 +1,11 @@
+.git
+.gitignore
+.vscode
+node_modules
+qa-artifacts
+tmp_qa_playwright.py
+__tmp_check.js
+*.log
+*.tmp
+Thumbs.db
+.DS_Store
