@@ -1,0 +1,1724 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Lingo - bo dem ngay yeu theo thoi gian thuc cho cap doi, luu du lieu tren thiet bi." />
+  <meta name="theme-color" content="#FEC5E5" />
+  <meta name="color-scheme" content="light" />
+  <meta name="format-detection" content="telephone=no" />
+  <title>Lingo - Bộ đếm ngày yêu</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root{
+      --rose:#FEC5E5;
+      --coral:#FF8FA3;
+      --ink:#5e4d57;
+      --ink2:#7a6973;
+      --fire:#ef476f;
+      --earth:#7f5539;
+      --air:#7bdff2;
+      --water:#3a86ff;
+    }
+    html,body{min-height:100%}
+    html{scroll-behavior:smooth}
+    body{
+      font-family:"Be Vietnam Pro",sans-serif;
+      color:var(--ink);
+      background:
+        radial-gradient(circle at 12% 10%, rgba(255,255,255,.75), transparent 42%),
+        radial-gradient(circle at 88% 12%, rgba(255,168,202,.35), transparent 36%),
+        radial-gradient(circle at 25% 90%, rgba(255,218,236,.55), transparent 40%),
+        linear-gradient(140deg,#ffeaf4,#ffd9ea 50%,#ffe7da);
+      overflow-x:hidden;
+    }
+    .skip-link{
+      position:fixed;left:.75rem;top:.75rem;z-index:80;
+      transform:translateY(-140%);
+      padding:.65rem .9rem;border-radius:.85rem;
+      border:1px solid rgba(255,255,255,.85);
+      background:rgba(255,255,255,.95);
+      color:var(--ink);font-weight:700;
+      box-shadow:0 10px 25px rgba(255,143,180,.2);
+      transition:transform .16s ease;
+    }
+    .skip-link:focus{transform:translateY(0)}
+    .card{
+      background:linear-gradient(180deg,rgba(255,255,255,.85),rgba(255,255,255,.68));
+      border:1px solid rgba(255,255,255,.6);
+      box-shadow:0 12px 32px rgba(255,143,180,.16);
+      backdrop-filter:blur(8px);
+      position:relative;
+      overflow:hidden;
+      animation:cardIn .45s ease both;
+      transform-origin:50% 100%;
+    }
+    .card::before{
+      content:"";
+      position:absolute;
+      inset:-1px;
+      pointer-events:none;
+      background:
+        radial-gradient(circle at 10% 0%, rgba(255,255,255,.55), transparent 40%),
+        radial-gradient(circle at 100% 20%, rgba(255, 174, 211, .12), transparent 35%);
+      opacity:.75;
+    }
+    @keyframes cardIn{
+      from{opacity:0;transform:translateY(8px) scale(.992)}
+      to{opacity:1;transform:none}
+    }
+    .btn{
+      border-radius:999px;padding:.65rem 1rem;font-weight:700;transition:.15s ease;
+      border:1px solid rgba(255, 190, 220, .45);
+    }
+    .btn:hover{transform:translateY(-1px)}
+    .btn-soft{background:rgba(255,255,255,.8)}
+    .btn-primary{background:linear-gradient(135deg,var(--coral),#ff6f91);color:#fff;border-color:transparent;box-shadow:0 10px 20px rgba(255,111,145,.25)}
+    .btn-danger{background:rgba(239,71,111,.08);color:#c9385c;border-color:rgba(239,71,111,.18)}
+    .field{width:100%;border-radius:.9rem;border:1px solid rgba(255,184,216,.5);background:rgba(255,255,255,.86);padding:.65rem .8rem;outline:none}
+    .field:focus{border-color:rgba(255,125,176,.85);box-shadow:0 0 0 4px rgba(255,160,203,.15)}
+    .btn:focus-visible,.field:focus-visible,button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{
+      outline:2px solid rgba(255,111,145,.95);
+      outline-offset:2px;
+    }
+    .modal-card:focus{outline:none}
+    .label{font-weight:600;font-size:.83rem;color:var(--ink2)}
+    .timer-tile{
+      position:relative;overflow:hidden;border-radius:1rem;
+      background:linear-gradient(180deg, rgba(255,255,255,.95), rgba(255,245,250,.92));
+      border:1px solid rgba(255, 191, 220, .45);
+      box-shadow:0 8px 20px rgba(255,143,180,.1);
+    }
+    .timer-tile::after{content:"";position:absolute;left:12%;right:12%;top:50%;height:1px;background:rgba(255,158,196,.2)}
+    .timer-value{display:inline-block;min-width:2ch}
+    .timer-value.chg{animation:pop .38s ease}
+    @keyframes pop{0%{opacity:.2;transform:translateY(5px) scale(.93)}50%{opacity:1;transform:translateY(-1px) scale(1.04)}100%{opacity:1;transform:none}}
+    .badge{
+      border-radius:1rem;padding:.8rem;border:1px solid rgba(255,255,255,.7);transition:.15s ease
+    }
+    .badge:hover{transform:translateY(-2px)}
+    .badge.on{
+      background:linear-gradient(160deg, rgba(255,255,255,.95), rgba(255,230,244,.9));
+      box-shadow:0 10px 24px rgba(255,134,171,.18);
+      border-color:rgba(255, 168, 208, .6);
+      position:relative;
+      overflow:hidden;
+    }
+    .badge.on::before{
+      content:"";
+      position:absolute;
+      inset:-35% -60%;
+      background:linear-gradient(105deg, transparent 40%, rgba(255,255,255,.65) 49%, transparent 58%);
+      transform:translateX(-45%) rotate(8deg);
+      animation:badgeSheen 3.8s ease-in-out infinite;
+      pointer-events:none;
+      opacity:.8;
+    }
+    @keyframes badgeSheen{
+      0%, 72% { transform:translateX(-45%) rotate(8deg); opacity:0; }
+      78% { opacity:.65; }
+      100% { transform:translateX(45%) rotate(8deg); opacity:0; }
+    }
+    .badge.off{
+      background:linear-gradient(180deg, rgba(255,255,255,.68), rgba(241,236,239,.82));
+      filter:saturate(.15);opacity:.9;border-color:rgba(210,200,207,.55)
+    }
+    .prog{height:.7rem;border-radius:999px;overflow:hidden;background:rgba(255,255,255,.65);border:1px solid rgba(255,184,217,.35)}
+    .prog > span{display:block;height:100%;width:0;background:linear-gradient(90deg,#ff9cc8,var(--coral));transition:width .35s ease;position:relative;overflow:hidden}
+    .prog > span::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:linear-gradient(110deg, transparent 30%, rgba(255,255,255,.55) 50%, transparent 70%);
+      transform:translateX(-100%);
+      animation:barShine 2.6s linear infinite;
+      opacity:.7;
+    }
+    @keyframes barShine{to{transform:translateX(140%)}}
+    .pill{display:inline-flex;align-items:center;gap:.35rem;border-radius:999px;padding:.3rem .6rem;border:1px solid rgba(255,255,255,.65);background:rgba(255,255,255,.72);font-size:.72rem;font-weight:700}
+    .avatar-wrap{
+      padding:2px;border-radius:1rem;background:linear-gradient(135deg,rgba(255,171,206,.9),rgba(255,145,173,.7));
+      box-shadow:0 8px 18px rgba(255,146,181,.15)
+    }
+    .modal{
+      position:fixed;inset:0;display:none;z-index:50;align-items:end;justify-content:center;
+      padding:.8rem;background:rgba(255,239,247,.55);backdrop-filter:blur(8px)
+    }
+    .modal.open{display:flex}
+    .modal.open .modal-card{animation:modalIn .2s ease}
+    @media (min-width:640px){.modal{align-items:center;padding:1.25rem}}
+    @keyframes modalIn{
+      from{opacity:0;transform:translateY(10px) scale(.985)}
+      to{opacity:1;transform:none}
+    }
+    .modal-card{
+      width:100%;max-width:64rem;max-height:92vh;overflow:hidden;
+      border-radius:1.4rem;background:linear-gradient(180deg,rgba(255,255,255,.95),rgba(255,247,251,.92));
+      border:1px solid rgba(255,218,234,.8);box-shadow:0 22px 60px rgba(229,113,161,.24)
+    }
+    .event-item{
+      border-radius:1rem;padding:.8rem;border:1px solid rgba(255,202,223,.46);background:rgba(255,255,255,.78);box-shadow:0 8px 20px rgba(255,170,204,.1)
+    }
+    .event-item:hover{transform:translateY(-1px);box-shadow:0 12px 24px rgba(255,170,204,.15)}
+    .event-item.today{
+      border-color:rgba(255,125,176,.7);
+      background:linear-gradient(180deg,rgba(255,243,249,.95),rgba(255,231,242,.9));
+      box-shadow:0 10px 26px rgba(255,115,164,.16);
+      animation:pulse 1.8s ease-in-out infinite;
+    }
+    @keyframes pulse{0%,100%{transform:none}50%{transform:translateY(-1px)}}
+    .ambient{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:0}
+    .float{
+      position:absolute;bottom:-12vh;animation:rise linear infinite;opacity:.22;will-change:transform,opacity;
+      filter:drop-shadow(0 8px 10px rgba(255, 118, 174, .12));
+    }
+    .float.heart{color:rgba(255,114,153,.35)}
+    .float.flm{width:22px;height:22px;background-size:contain;background-repeat:no-repeat;background-position:center}
+    @keyframes rise{
+      0%{transform:translate3d(0,0,0) rotate(0) scale(var(--s,1));opacity:0}
+      10%{opacity:var(--o,.25)}
+      75%{opacity:var(--o,.25)}
+      100%{transform:translate3d(var(--dx,0),-120vh,0) rotate(var(--r,0)) scale(var(--s,1));opacity:0}
+    }
+    .toast{
+      position:fixed;left:50%;bottom:1rem;transform:translateX(-50%) translateY(8px);opacity:0;pointer-events:none;z-index:60;
+      width:min(32rem,calc(100% - 2rem));border-radius:1rem;background:rgba(255,255,255,.92);border:1px solid rgba(255,255,255,.65);
+      box-shadow:0 14px 32px rgba(255, 148, 185, .18);padding:.8rem 1rem;transition:.2s ease
+    }
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    .hero-flamingo{
+      position:relative;
+      width:100%;
+      height:100%;
+      border-radius:1rem;
+      border:1px solid rgba(255,255,255,.7);
+      background:
+        radial-gradient(circle at 30% 20%, rgba(255,255,255,.85), transparent 45%),
+        linear-gradient(165deg, rgba(255,247,251,.95), rgba(255,226,239,.88));
+      box-shadow:0 10px 22px rgba(255, 139, 178, .18);
+      overflow:hidden;
+    }
+    .hero-flamingo::before{
+      content:"";
+      position:absolute;
+      inset:-15%;
+      background:radial-gradient(circle, rgba(255, 157, 198, .16), transparent 62%);
+      animation:heroHalo 4.2s ease-in-out infinite;
+    }
+    .hero-flamingo img{
+      position:relative;
+      z-index:1;
+      animation:heroBob 3s ease-in-out infinite;
+      filter:drop-shadow(0 8px 10px rgba(255, 123, 170, .16));
+    }
+    .hero-flamingo .spark{
+      position:absolute;
+      z-index:1;
+      font-size:10px;
+      color:rgba(255, 109, 163, .9);
+      animation:twinkle 2.4s ease-in-out infinite;
+    }
+    .hero-flamingo .spark.s1{top:12%;right:15%;animation-delay:.1s}
+    .hero-flamingo .spark.s2{bottom:18%;left:16%;font-size:8px;animation-delay:.8s}
+    .hero-flamingo .spark.s3{top:46%;right:10%;font-size:7px;animation-delay:1.4s}
+    @keyframes heroBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+    @keyframes heroHalo{0%,100%{transform:scale(1);opacity:.55}50%{transform:scale(1.08);opacity:.9}}
+    @keyframes twinkle{0%,100%{opacity:.25;transform:scale(.8)}50%{opacity:1;transform:scale(1.2)}}
+    .wizard-inline-note{
+      border:1px dashed rgba(255, 170, 206, .55);
+      background:rgba(255,255,255,.62);
+      border-radius:.9rem;
+      padding:.55rem .75rem;
+    }
+    .wizard-close-lock{opacity:.55;cursor:not-allowed}
+    .wiz-dot{width:10px;height:10px;border-radius:999px;background:rgba(255,175,212,.38);border:1px solid rgba(255,175,212,.55);transition:.15s}
+    .wiz-dot.active{width:28px;background:linear-gradient(90deg,#ff9cc8,var(--coral));border-color:transparent}
+    .wiz-dot.done{background:rgba(255,125,176,.65)}
+    .cele-wrap{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+    .cele-piece{position:absolute;left:50%;top:50%;font-size:18px;color:#ff699c;opacity:0;animation:burst 1.2s ease forwards}
+    @keyframes burst{0%{opacity:0;transform:translate(-50%,-50%) scale(.6)}15%{opacity:1}100%{opacity:0;transform:translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(1.2) rotate(var(--rot))}}
+    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+    @media (prefers-reduced-motion: reduce){
+      .float,.timer-value.chg,.event-item.today,.cele-piece,.hero-flamingo::before,.hero-flamingo img,.hero-flamingo .spark,.badge.on::before,.prog > span::after{animation:none!important}
+      .prog > span,.badge,.btn,.card{transition:none!important}
+    }
+  </style>
+</head>
+<body>
+  <a href="#mainContent" class="skip-link">Bỏ qua đến nội dung chính</a>
+  <noscript>
+    <div style="position:sticky;top:0;z-index:70;background:#fff8fc;border-bottom:1px solid rgba(255,184,216,.5);padding:10px 14px;font:600 14px/1.4 'Be Vietnam Pro',sans-serif;color:#5e4d57;">
+      Trang web này cần JavaScript để chạy bộ đếm thời gian thực, cột mốc và lưu dữ liệu local.
+    </div>
+  </noscript>
+  <div id="ambient" class="ambient" aria-hidden="true"></div>
+
+  <main id="mainContent" tabindex="-1" class="relative z-10 px-4 py-4 sm:px-6 lg:px-8">
+    <div class="mx-auto max-w-6xl space-y-4">
+      <header class="card rounded-3xl p-4 sm:p-5">
+        <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div class="flex items-start gap-4">
+            <div class="h-14 w-14 rounded-2xl flex items-center justify-center" id="heroFlamingoBox"></div>
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-[.18em] text-pink-500/80">Lingo</p>
+              <h1 class="text-xl sm:text-2xl font-extrabold text-[color:var(--ink)]">Bộ đếm ngày yêu Hồng Hạc</h1>
+              <p class="text-sm text-[color:var(--ink2)]">Tình yêu bền vững như loài Hạc (chung thủy trọn đời) và rực rỡ như hoa Tulip (tình yêu hoàn hảo).</p>
+            </div>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button id="btnOpenSettings" class="btn btn-soft text-sm" type="button">Cài đặt</button>
+            <button id="btnOpenWizard" class="btn btn-primary text-sm" type="button">Wizard nhanh</button>
+          </div>
+        </div>
+      </header>
+
+      <div class="grid grid-cols-1 gap-4 lg:grid-cols-12">
+        <section class="card rounded-3xl p-4 sm:p-5 lg:col-span-8">
+          <div class="flex flex-col gap-3 sm:flex-row sm:justify-between">
+            <div>
+              <span class="pill text-pink-600">⏱ Thời gian yêu đang chạy</span>
+              <h2 class="mt-3 text-lg sm:text-xl font-bold text-[color:var(--ink)]">Bộ đếm tình yêu thời gian thực</h2>
+              <p id="timerNote" class="mt-1 text-sm text-[color:var(--ink2)]">Hãy nhập ngày bắt đầu yêu để bắt đầu đếm.</p>
+            </div>
+            <div class="text-left sm:text-right">
+              <p class="text-xs uppercase tracking-[.12em] text-pink-500/80">Ngày bắt đầu</p>
+              <p id="startDateText" class="text-sm font-semibold text-[color:var(--ink)]">Chưa thiết lập</p>
+            </div>
+          </div>
+
+          <div class="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-6">
+            <div class="timer-tile p-3 text-center"><div class="timer-value text-2xl sm:text-3xl font-extrabold text-pink-600" data-t="years">00</div><div class="mt-1 text-[11px] uppercase tracking-[.12em] text-[color:var(--ink2)] font-semibold">Năm</div></div>
+            <div class="timer-tile p-3 text-center"><div class="timer-value text-2xl sm:text-3xl font-extrabold text-pink-600" data-t="months">00</div><div class="mt-1 text-[11px] uppercase tracking-[.12em] text-[color:var(--ink2)] font-semibold">Tháng</div></div>
+            <div class="timer-tile p-3 text-center"><div class="timer-value text-2xl sm:text-3xl font-extrabold text-pink-600" data-t="days">00</div><div class="mt-1 text-[11px] uppercase tracking-[.12em] text-[color:var(--ink2)] font-semibold">Ngày</div></div>
+            <div class="timer-tile p-3 text-center"><div class="timer-value text-2xl sm:text-3xl font-extrabold text-pink-600" data-t="hours">00</div><div class="mt-1 text-[11px] uppercase tracking-[.12em] text-[color:var(--ink2)] font-semibold">Giờ</div></div>
+            <div class="timer-tile p-3 text-center"><div class="timer-value text-2xl sm:text-3xl font-extrabold text-pink-600" data-t="minutes">00</div><div class="mt-1 text-[11px] uppercase tracking-[.12em] text-[color:var(--ink2)] font-semibold">Phút</div></div>
+            <div class="timer-tile p-3 text-center"><div class="timer-value text-2xl sm:text-3xl font-extrabold text-pink-600" data-t="seconds">00</div><div class="mt-1 text-[11px] uppercase tracking-[.12em] text-[color:var(--ink2)] font-semibold">Giây</div></div>
+          </div>
+          <p id="timerAria" class="sr-only" aria-live="polite"></p>
+        </section>
+
+        <section class="card rounded-3xl p-4 sm:p-5 lg:col-span-4">
+          <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Tiếp theo</p>
+          <h2 class="text-lg font-bold text-[color:var(--ink)]">Cột mốc kế tiếp</h2>
+          <div class="mt-4 space-y-3">
+            <div class="rounded-2xl border border-white/70 bg-white/65 p-4">
+              <p class="text-sm text-[color:var(--ink2)]">Mục tiêu</p>
+              <p id="nextMsName" class="text-lg font-bold text-[color:var(--ink)] mt-1">Chưa có dữ liệu</p>
+              <p id="nextMsDate" class="text-sm text-[color:var(--ink2)] mt-1">Thiết lập ngày bắt đầu yêu</p>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div class="rounded-2xl border border-white/70 bg-white/65 p-4">
+                <p class="text-xs uppercase tracking-[.12em] text-[color:var(--ink2)]">Còn lại</p>
+                <p id="nextMsLeft" class="mt-1 text-xl font-extrabold text-pink-600">--</p>
+              </div>
+              <div class="rounded-2xl border border-white/70 bg-white/65 p-4">
+                <p class="text-xs uppercase tracking-[.12em] text-[color:var(--ink2)]">Tiến độ</p>
+                <p id="nextMsPct" class="mt-1 text-xl font-extrabold text-pink-600">0%</p>
+              </div>
+            </div>
+            <div class="prog"><span id="nextMsBar"></span></div>
+          </div>
+        </section>
+      </div>
+
+      <section class="card rounded-3xl p-4 sm:p-5">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Cặp đôi</p>
+            <h2 class="text-lg sm:text-xl font-bold text-[color:var(--ink)]">Hồ sơ tình yêu của hai bạn</h2>
+            <p class="text-sm text-[color:var(--ink2)]">Tuổi, cung hoàng đạo, nguyên tố và avatar hồng hạc.</p>
+          </div>
+          <button id="btnQuickEdit" class="btn btn-soft text-sm" type="button">Sửa hồ sơ</button>
+        </div>
+        <div id="profiles" class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2"></div>
+      </section>
+
+      <div class="grid grid-cols-1 gap-4 lg:grid-cols-12">
+        <section class="card rounded-3xl p-4 sm:p-5 lg:col-span-7">
+          <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Gamification</p>
+          <h2 class="text-lg sm:text-xl font-bold text-[color:var(--ink)]">Cột mốc tình yêu</h2>
+          <p class="text-sm text-[color:var(--ink2)]">Badge sáng lên khi hai bạn chinh phục các chặng đường.</p>
+          <div id="milestones" class="mt-4 grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3"></div>
+        </section>
+
+        <section class="card rounded-3xl p-4 sm:p-5 lg:col-span-5">
+          <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Ngày đặc biệt</p>
+          <h2 class="text-lg sm:text-xl font-bold text-[color:var(--ink)]">Quản lý ngày quan trọng</h2>
+          <p class="text-sm text-[color:var(--ink2)]">CRUD + sắp xếp ngày gần nhất + highlight hôm nay.</p>
+
+          <form id="eventForm" class="mt-4 space-y-3 rounded-2xl border border-white/70 bg-white/65 p-4">
+            <input type="hidden" id="evEditId" value="">
+            <div>
+              <label class="label" for="evTitle">Tên sự kiện</label>
+              <input id="evTitle" class="field mt-1 text-sm" type="text" required maxlength="80" placeholder="Ví dụ: Kỷ niệm lần hẹn đầu">
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="label" for="evCat">Loại</label>
+                <select id="evCat" class="field mt-1 text-sm">
+                  <option value="sinh_nhat">Sinh nhật</option>
+                  <option value="ky_niem">Kỷ niệm</option>
+                  <option value="hen_ho">Hẹn hò</option>
+                  <option value="khac">Khác</option>
+                </select>
+              </div>
+              <div>
+                <label class="label" for="evDate">Ngày</label>
+                <input id="evDate" class="field mt-1 text-sm" type="date" required>
+              </div>
+            </div>
+            <div>
+              <label class="label" for="evNote">Ghi chú (tuỳ chọn)</label>
+              <textarea id="evNote" class="field mt-1 text-sm" rows="2" maxlength="240" placeholder="Lời nhắn ngắn..."></textarea>
+            </div>
+            <label class="flex items-center gap-2 text-sm text-[color:var(--ink)]">
+              <input id="evRepeat" type="checkbox" class="h-4 w-4 rounded">
+              <span>Lặp lại hàng năm</span>
+            </label>
+            <div class="flex flex-wrap gap-2">
+              <button id="evSubmitBtn" class="btn btn-primary text-sm" type="submit">Thêm ngày đặc biệt</button>
+              <button id="evCancelEdit" class="btn btn-soft text-sm hidden" type="button">Huỷ sửa</button>
+            </div>
+          </form>
+
+          <div class="mt-4 flex items-center justify-between">
+            <p class="text-sm font-semibold text-[color:var(--ink)]">Danh sách sự kiện</p>
+            <p id="evCount" class="text-xs text-[color:var(--ink2)]">0 sự kiện</p>
+          </div>
+          <div id="eventList" class="mt-2 space-y-3"></div>
+        </section>
+      </div>
+
+      <footer class="card rounded-2xl p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div class="text-sm text-[color:var(--ink2)]">
+          <p class="font-semibold text-[color:var(--ink)]">Riêng tư & cài đặt</p>
+          <p>Dữ liệu lưu trong <code>LocalStorage</code> của trình duyệt này, không có backend.</p>
+        </div>
+        <div class="flex gap-2">
+          <button id="btnFooterSettings" class="btn btn-soft text-sm" type="button">Mở cài đặt</button>
+          <button id="btnFooterWizard" class="btn btn-primary text-sm" type="button">Wizard nhanh</button>
+        </div>
+      </footer>
+    </div>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"><span id="toastText" class="text-sm font-semibold text-[color:var(--ink)]"></span></div>
+  <div id="modalSettings" class="modal" aria-hidden="true"></div>
+  <div id="modalWizard" class="modal" aria-hidden="true"></div>
+  <div id="modalCelebrate" class="modal" aria-hidden="true"></div>
+
+  <script>
+    (() => {
+      "use strict";
+      const STORAGE_KEY = "pinkFlamingoLoveDays.v1";
+      const APP_VERSION = 1;
+
+      const MILESTONES = [
+        { id: "m_1_week", label: "1 tuần", type: "days", amount: 7 },
+        { id: "m_1_month", label: "1 tháng", type: "months", amount: 1 },
+        { id: "m_100_days", label: "100 ngày", type: "days", amount: 100 },
+        { id: "m_1_year", label: "1 năm", type: "years", amount: 1 },
+        { id: "m_500_days", label: "500 ngày", type: "days", amount: 500 },
+        { id: "m_2_years", label: "2 năm", type: "years", amount: 2 },
+        { id: "m_1000_days", label: "1000 ngày", type: "days", amount: 1000 },
+        { id: "m_5_years", label: "5 năm", type: "years", amount: 5 },
+        { id: "m_7_years", label: "7 năm", type: "years", amount: 7 },
+        { id: "m_10_years", label: "10 năm", type: "years", amount: 10 },
+      ];
+
+      const CAT_LABEL = {
+        sinh_nhat: "Sinh nhật",
+        ky_niem: "Kỷ niệm",
+        hen_ho: "Hẹn hò",
+        khac: "Khác",
+      };
+
+      const GENDER_LABEL = {
+        nam: "Nam",
+        nu: "Nữ",
+        khac: "Khác",
+        khong_tiet_lo: "Không tiết lộ",
+      };
+
+      const EL_META = {
+        Fire: { label: "Lửa", color: "var(--fire)", bg: "rgba(239,71,111,.12)" },
+        Earth: { label: "Đất", color: "var(--earth)", bg: "rgba(127,85,57,.12)" },
+        Air: { label: "Khí", color: "var(--air)", bg: "rgba(123,223,242,.18)" },
+        Water: { label: "Nước", color: "var(--water)", bg: "rgba(58,134,255,.12)" },
+      };
+
+      const App = {
+        state: null,
+        runtime: {
+          tick: null,
+          toastTimer: null,
+          timerEls: {},
+          modalStack: [],
+          modalLastFocus: {},
+          wizardStep: 0,
+          wizardRequired: false,
+          wizardTouchedStart: false,
+          celebrationQueue: [],
+          celebrationQueued: new Set(),
+          activeCelebration: null,
+          reducedMotion: window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+        },
+        refs: {},
+      };
+
+      const DateX = {
+        p2(n) { return String(n).padStart(2, "0"); },
+        clamp(v, min, max) { return Math.min(max, Math.max(min, v)); },
+
+        parseDate(value) {
+          if (!value || typeof value !== "string") return null;
+          const m = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+          if (!m) return null;
+          const y = +m[1], mo = +m[2] - 1, d = +m[3];
+          const dt = new Date(y, mo, d, 0, 0, 0, 0);
+          return (dt.getFullYear() === y && dt.getMonth() === mo && dt.getDate() === d) ? dt : null;
+        },
+
+        parseDateTime(value) {
+          if (!value || typeof value !== "string") return null;
+          const m = value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/);
+          if (m) {
+            const y = +m[1], mo = +m[2] - 1, d = +m[3], h = +m[4], mi = +m[5], s = +(m[6] || 0);
+            const dt = new Date(y, mo, d, h, mi, s, 0);
+            if (dt.getFullYear() === y && dt.getMonth() === mo && dt.getDate() === d) return dt;
+          }
+          const fallback = new Date(value);
+          return Number.isNaN(fallback.getTime()) ? null : fallback;
+        },
+
+        toDateInput(dt) {
+          if (!(dt instanceof Date) || Number.isNaN(dt.getTime())) return "";
+          return `${dt.getFullYear()}-${this.p2(dt.getMonth()+1)}-${this.p2(dt.getDate())}`;
+        },
+        toDateTimeInput(dt) {
+          if (!(dt instanceof Date) || Number.isNaN(dt.getTime())) return "";
+          return `${this.toDateInput(dt)}T${this.p2(dt.getHours())}:${this.p2(dt.getMinutes())}`;
+        },
+        fmt(dt, withTime = false) {
+          if (!(dt instanceof Date) || Number.isNaN(dt.getTime())) return "—";
+          return new Intl.DateTimeFormat("vi-VN", withTime ? {
+            day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit"
+          } : {
+            day: "2-digit", month: "2-digit", year: "numeric"
+          }).format(dt);
+        },
+        sod(dt) { return new Date(dt.getFullYear(), dt.getMonth(), dt.getDate()); },
+        sameDay(a,b) {
+          return !!a && !!b && a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
+        },
+        dim(y,m) { return new Date(y, m + 1, 0).getDate(); },
+        addDays(dt,n){ const x = new Date(dt); x.setDate(x.getDate()+n); return x; },
+        addMonths(dt,n){
+          const x = new Date(dt);
+          const day = x.getDate();
+          x.setDate(1);
+          x.setMonth(x.getMonth()+n);
+          x.setDate(Math.min(day, this.dim(x.getFullYear(), x.getMonth())));
+          return x;
+        },
+        addYears(dt,n){
+          const x = new Date(dt);
+          const mo = x.getMonth();
+          const day = x.getDate();
+          x.setFullYear(x.getFullYear()+n, mo, 1);
+          x.setDate(Math.min(day, this.dim(x.getFullYear(), mo)));
+          return x;
+        },
+
+        /**
+         * Tính chênh lệch kiểu lịch (năm/tháng/ngày) cho bộ đếm tình yêu.
+         * Không quy đổi trực tiếp toàn bộ về tháng vì số ngày mỗi tháng khác nhau.
+         * Cách làm:
+         * 1) Cộng dần năm và tháng theo lịch tới khi vượt quá end.
+         * 2) Phần còn lại (<1 tháng) cộng dần ngày (tránh lệch do DST).
+         * 3) Dùng milliseconds để lấy giờ/phút/giây còn lại.
+         */
+        elapsedCalendar(start, end) {
+          if (!(start instanceof Date) || !(end instanceof Date) || end < start) {
+            return { valid:false, years:0, months:0, days:0, hours:0, minutes:0, seconds:0 };
+          }
+          let cur = new Date(start);
+          let years = 0;
+          while (years < 200) {
+            const nx = this.addYears(cur, 1);
+            if (nx <= end) { cur = nx; years++; } else break;
+          }
+          let months = 0;
+          while (months < 24) {
+            const nx = this.addMonths(cur, 1);
+            if (nx <= end) { cur = nx; months++; } else break;
+          }
+          let days = 0;
+          while (days < 40) {
+            const nx = this.addDays(cur, 1);
+            if (nx <= end) { cur = nx; days++; } else break;
+          }
+          let rem = Math.floor((end - cur) / 1000);
+          const hours = Math.floor(rem / 3600); rem -= hours * 3600;
+          const minutes = Math.floor(rem / 60); rem -= minutes * 60;
+          const seconds = Math.max(0, rem);
+          return { valid:true, years, months, days, hours, minutes, seconds };
+        },
+      };
+
+      const ProfileX = {
+        zodiac(bday) {
+          if (!(bday instanceof Date) || Number.isNaN(bday.getTime())) return null;
+          const m = bday.getMonth() + 1, d = bday.getDate();
+          const inR = (mo, a, b) => m === mo && d >= a && d <= b;
+          if (inR(3,21,31)||inR(4,1,19)) return { name:"Bạch Dương", element:"Fire" };
+          if (inR(4,20,30)||inR(5,1,20)) return { name:"Kim Ngưu", element:"Earth" };
+          if (inR(5,21,31)||inR(6,1,20)) return { name:"Song Tử", element:"Air" };
+          if (inR(6,21,30)||inR(7,1,22)) return { name:"Cự Giải", element:"Water" };
+          if (inR(7,23,31)||inR(8,1,22)) return { name:"Sư Tử", element:"Fire" };
+          if (inR(8,23,31)||inR(9,1,22)) return { name:"Xử Nữ", element:"Earth" };
+          if (inR(9,23,30)||inR(10,1,22)) return { name:"Thiên Bình", element:"Air" };
+          if (inR(10,23,31)||inR(11,1,21)) return { name:"Bọ Cạp", element:"Water" };
+          if (inR(11,22,30)||inR(12,1,21)) return { name:"Nhân Mã", element:"Fire" };
+          if (inR(12,22,31)||inR(1,1,19)) return { name:"Ma Kết", element:"Earth" };
+          if (inR(1,20,31)||inR(2,1,18)) return { name:"Bảo Bình", element:"Air" };
+          return { name:"Song Ngư", element:"Water" };
+        },
+        age(bday, now = new Date()) {
+          if (!(bday instanceof Date) || Number.isNaN(bday.getTime())) return null;
+          let age = now.getFullYear() - bday.getFullYear();
+          const had =
+            now.getMonth() > bday.getMonth() ||
+            (now.getMonth() === bday.getMonth() && now.getDate() >= bday.getDate());
+          if (!had) age--;
+          return age >= 0 ? age : null;
+        }
+      };
+
+      const AvatarX = {
+        svg(size = 120) {
+          return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 120 120"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#FFD7EA"/><stop offset="100%" stop-color="#FF9CC8"/></linearGradient></defs><rect width="120" height="120" rx="24" fill="#FFF8FC"/><circle cx="60" cy="60" r="47" fill="url(#g)" opacity=".34"/><path d="M69 26c7 1 12 7 12 14 0 6-4 12-10 14l-3 1c-5 2-8 6-8 11v16c0 8-6 14-14 14s-14-6-14-14c0-7 5-13 12-14l6-1c3-1 5-3 5-6v-4c0-6 2-11 6-15l8-8z" fill="#FF8FB4"/><path d="M78 24c6 1 11 7 11 13 0 6-4 11-9 13l-5 2-5-7 4-4c2-2 3-4 3-7 0-4-2-7-5-9l6-1z" fill="#FF6F91"/><path d="M80 38l10-1-8 7" stroke="#8A4C5D" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M55 86v13M64 86v13" stroke="#D46987" stroke-width="2.4" stroke-linecap="round"/><path d="M54 99h7M63 99h7" stroke="#8A4C5D" stroke-width="2" stroke-linecap="round"/><path d="M90 32c3 0 6 3 6 6 0 5-6 8-10 11-4-3-10-6-10-11 0-3 3-6 6-6 2 0 3 1 4 2 1-1 2-2 4-2z" fill="#FF5E8C" opacity=".9"/></svg>`;
+        },
+        data(size = 120) { return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(this.svg(size))}`; },
+        tiny() {
+          const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14.6 3.2c1.5.2 2.8 1.4 2.8 3 0 1.2-.8 2.4-2 2.8l-.8.3c-.9.3-1.4 1-1.4 1.9v3.4c0 1.7-1.4 3.1-3.1 3.1S7 16.3 7 14.6c0-1.4 1-2.7 2.4-3l1.2-.2c.4-.1.7-.4.7-.8V9.9c0-1.1.4-2.1 1.2-2.8l2.1-2.1z" fill="#ff8fb4"/><path d="M16 5.9l3-.4-2.2 2" stroke="#8A4C5D" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 17.4v2.5M13 17.4v2.5" stroke="#d46987" stroke-width="1.1" stroke-linecap="round"/></svg>`;
+          return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+        },
+        src(person) { return (person && person.avatarUrl && String(person.avatarUrl).trim()) || this.data(); },
+        async resizeFile(file, max = 320) {
+          if (!(file instanceof File)) return null;
+          if (!file.type.startsWith("image/")) throw new Error("Vui lòng chọn tệp hình ảnh.");
+          const dataUrl = await new Promise((resolve, reject) => {
+            const r = new FileReader();
+            r.onload = () => resolve(r.result);
+            r.onerror = () => reject(new Error("Không đọc được ảnh."));
+            r.readAsDataURL(file);
+          });
+          const img = await new Promise((resolve, reject) => {
+            const i = new Image();
+            i.onload = () => resolve(i);
+            i.onerror = () => reject(new Error("Không tải được ảnh."));
+            i.src = dataUrl;
+          });
+          const c = document.createElement("canvas");
+          const ratio = Math.min(1, max / img.width, max / img.height);
+          c.width = Math.max(1, Math.round(img.width * ratio));
+          c.height = Math.max(1, Math.round(img.height * ratio));
+          const ctx = c.getContext("2d");
+          if (!ctx) throw new Error("Thiếu canvas context.");
+          ctx.drawImage(img, 0, 0, c.width, c.height);
+          return c.toDataURL("image/jpeg", 0.82);
+        }
+      };
+
+      const Storage = {
+        load() {
+          try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (!raw) return defState();
+            return migrate(JSON.parse(raw));
+          } catch (e) {
+            console.error(e);
+            UI.toast("Dữ liệu cũ bị lỗi. Đã tạo trạng thái mới.");
+            return defState();
+          }
+        },
+        save() {
+          try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(App.state));
+            return true;
+          } catch (e) {
+            console.error(e);
+            UI.toast("Không thể lưu dữ liệu (có thể đầy bộ nhớ).");
+            return false;
+          }
+        },
+        reset() { localStorage.removeItem(STORAGE_KEY); }
+      };
+
+      const MilestoneX = {
+        build(start, now = new Date()) {
+          if (!(start instanceof Date) || Number.isNaN(start.getTime())) return [];
+          return MILESTONES.map(m => {
+            let date = null;
+            if (m.type === "days") date = DateX.addDays(start, m.amount);
+            else if (m.type === "months") date = DateX.addMonths(start, m.amount);
+            else date = DateX.addYears(start, m.amount);
+            return { ...m, date, achieved: now >= date };
+          });
+        },
+        next(list, now = new Date()) { return list.find(m => m.date > now) || null; }
+      };
+
+      const EventX = {
+        meta(ev, now = new Date()) {
+          const today = DateX.sod(now);
+          const base = DateX.parseDate(ev.date);
+          if (!base) return { base:null, next:null, rank:3, days:null, today:false, past:false };
+          if (!ev.repeatAnnual) {
+            const diff = Math.round((DateX.sod(base) - today) / 86400000);
+            const isToday = DateX.sameDay(base, today);
+            const past = base < today && !isToday;
+            return { base, next: base, rank: isToday ? 0 : (past ? 2 : 1), days: diff, today:isToday, past };
+          }
+          const mo = base.getMonth(), d = base.getDate();
+          const occur = (y) => {
+            let dd = d;
+            if (mo === 1 && d === 29) {
+              if (new Date(y, 1, 29).getDate() !== 29) dd = 28;
+            }
+            return new Date(y, mo, dd, 0, 0, 0, 0);
+          };
+          let next = occur(today.getFullYear());
+          if (next < today && !DateX.sameDay(next, today)) next = occur(today.getFullYear()+1);
+          const diff = Math.round((next - today) / 86400000);
+          return { base, next, rank: diff === 0 ? 0 : 1, days: diff, today: diff === 0, past:false };
+        },
+        sorted(events, now = new Date()) {
+          return (events || []).map(ev => ({ ev, meta: this.meta(ev, now) })).sort((a,b) => {
+            if (a.meta.rank !== b.meta.rank) return a.meta.rank - b.meta.rank;
+            if (a.meta.rank === 2) return (b.meta.base || 0) - (a.meta.base || 0);
+            return (a.meta.next || 0) - (b.meta.next || 0);
+          });
+        }
+      };
+
+      const Templates = {
+        esc(s) {
+          return String(s ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#39;");
+        },
+        personFields(prefix, title) {
+          return `
+            <div class="rounded-2xl border border-white/70 bg-white/65 p-4">
+              <div class="mb-3 flex items-center gap-3">
+                <div class="avatar-wrap h-14 w-14"><img id="${prefix}_preview" class="h-full w-full rounded-[14px] object-cover bg-white/70" alt="${title}"></div>
+                <div><p class="font-bold text-[color:var(--ink)]">${title}</p><p class="text-xs text-[color:var(--ink2)]">Hồ sơ cá nhân</p></div>
+              </div>
+              <div class="space-y-3">
+                <div><label class="label" for="${prefix}_name">Tên</label><input id="${prefix}_name" class="field mt-1 text-sm" type="text" maxlength="50" placeholder="Nhập tên"></div>
+                <div class="grid grid-cols-2 gap-3">
+                  <div><label class="label" for="${prefix}_birthday">Ngày sinh</label><input id="${prefix}_birthday" class="field mt-1 text-sm" type="date"></div>
+                  <div><label class="label" for="${prefix}_gender">Giới tính</label>
+                    <select id="${prefix}_gender" class="field mt-1 text-sm">
+                      <option value="nu">Nữ</option><option value="nam">Nam</option><option value="khac">Khác</option><option value="khong_tiet_lo">Không tiết lộ</option>
+                    </select>
+                  </div>
+                </div>
+                <div><label class="label" for="${prefix}_url">Avatar URL (tuỳ chọn)</label><input id="${prefix}_url" class="field mt-1 text-sm" type="url" placeholder="https://..."></div>
+                <div><label class="label" for="${prefix}_file">Hoặc tải ảnh lên</label><input id="${prefix}_file" class="field mt-1 text-sm" type="file" accept="image/*"></div>
+                <label class="flex items-center gap-2 text-sm"><input id="${prefix}_default" type="checkbox" class="h-4 w-4 rounded"><span>Dùng avatar hồng hạc mặc định</span></label>
+              </div>
+            </div>`;
+        },
+        settingsModal() {
+          return `
+            <div class="absolute inset-0" data-close="settings"></div>
+            <div class="modal-card relative" role="dialog" aria-modal="true" aria-labelledby="settingsTitle" tabindex="-1" data-modal-card="settings">
+              <div class="flex items-center justify-between border-b border-pink-100/80 px-4 py-3 sm:px-5">
+                <div><p class="text-xs font-semibold uppercase tracking-[.14em] text-pink-500/80">Cài đặt</p><h3 id="settingsTitle" class="text-lg font-bold text-[color:var(--ink)]">Thông tin cặp đôi & ngày bắt đầu</h3></div>
+                <button class="btn btn-soft !p-0 h-10 w-10 flex items-center justify-center" type="button" data-close="settings" aria-label="Đóng cài đặt">✕</button>
+              </div>
+              <form id="settingsForm" class="max-h-[calc(92vh-4rem)] overflow-y-auto px-4 py-4 sm:px-5 sm:py-5">
+                <div class="rounded-2xl border border-white/70 bg-white/65 p-4">
+                  <label class="label" for="s_start">Ngày bắt đầu yêu (có giờ)</label>
+                  <input id="s_start" class="field mt-2 text-sm" type="datetime-local">
+                  <p class="mt-2 text-xs text-[color:var(--ink2)]">Dữ liệu dùng múi giờ trên thiết bị này.</p>
+                </div>
+                <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  ${this.personFields("sA","Người 1")}
+                  ${this.personFields("sB","Người 2")}
+                </div>
+                <div class="mt-4 rounded-2xl border border-pink-100/70 bg-white/60 p-4 text-sm text-[color:var(--ink2)]">Dữ liệu chỉ lưu trong LocalStorage trên thiết bị của bạn.</div>
+                <div class="mt-3 flex flex-wrap gap-2">
+                  <button id="btnExportJson" class="btn btn-soft text-sm" type="button">Xuất dữ liệu JSON</button>
+                  <button id="btnImportJson" class="btn btn-soft text-sm" type="button">Nhập dữ liệu JSON</button>
+                  <input id="importJsonInput" type="file" accept=".json,application/json" class="hidden">
+                </div>
+                <div class="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
+                  <button id="btnResetAll" class="btn btn-danger text-sm" type="button">Đặt lại toàn bộ dữ liệu</button>
+                  <div class="flex justify-end gap-2">
+                    <button class="btn btn-soft text-sm" type="button" data-close="settings">Đóng</button>
+                    <button id="btnSaveSettings" class="btn btn-primary text-sm" type="submit">Lưu thay đổi</button>
+                  </div>
+                </div>
+              </form>
+            </div>`;
+        },
+        wizardModal() {
+          return `
+            <div class="absolute inset-0" data-close="wizard"></div>
+            <div class="modal-card relative" role="dialog" aria-modal="true" aria-labelledby="wizardTitle" aria-describedby="wizStepText" tabindex="-1" data-modal-card="wizard">
+              <div class="border-b border-pink-100/80 px-4 py-3 sm:px-5">
+                <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p class="text-xs font-semibold uppercase tracking-[.14em] text-pink-500/80">Wizard khởi tạo</p>
+                    <h3 id="wizardTitle" class="text-lg font-bold text-[color:var(--ink)]">Thiết lập nhanh cặp đôi hồng hạc</h3>
+                    <p id="wizStepText" class="text-sm text-[color:var(--ink2)]">Bước 1/3</p>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <div id="wizDots" class="flex gap-2" aria-hidden="true"><span class="wiz-dot"></span><span class="wiz-dot"></span><span class="wiz-dot"></span></div>
+                    <button id="wizClose" class="btn btn-soft !p-0 h-9 w-9 flex items-center justify-center" type="button" aria-label="Đóng wizard">✕</button>
+                  </div>
+                </div>
+              </div>
+                <div id="wizCloseHint" class="wizard-inline-note mt-3 mx-4 sm:mx-5 text-xs text-[color:var(--ink2)] hidden" aria-live="polite"></div>
+              <form id="wizardForm" class="max-h-[calc(92vh-5.5rem)] overflow-y-auto px-4 py-4 sm:px-5 sm:py-5">
+                <div data-step="0">
+                  <div class="grid grid-cols-1 lg:grid-cols-[1.1fr_.9fr] gap-4">
+                    <div class="rounded-2xl border border-white/70 bg-white/65 p-4">
+                      <p class="font-semibold text-[color:var(--ink)]">Bắt đầu từ khoảnh khắc nào?</p>
+                      <p class="mt-1 text-sm text-[color:var(--ink2)]">Chọn ngày và giờ bắt đầu yêu để bộ đếm chạy chính xác.</p>
+                      <div class="mt-4"><label class="label" for="w_start">Ngày bắt đầu yêu</label><input id="w_start" class="field mt-1 text-sm" type="datetime-local"></div>
+                    </div>
+                    <div class="rounded-2xl border border-white/70 bg-white/65 p-4">
+                      <div id="wizFlmBox" class="h-16 w-16 rounded-2xl flex items-center justify-center"></div>
+                      <h4 class="mt-3 font-bold text-[color:var(--ink)]">Lingo</h4>
+                      <p class="mt-1 text-sm text-[color:var(--ink2)]">Tình yêu bền vững như loài Hạc (chung thủy trọn đời) và rực rỡ như hoa Tulip (tình yêu hoàn hảo).</p>
+                    </div>
+                  </div>
+                </div>
+                <div data-step="1" class="hidden">${this.personFields("wA","Người 1")}</div>
+                <div data-step="2" class="hidden">${this.personFields("wB","Người 2")}</div>
+                <div class="mt-5 flex items-center justify-between gap-2">
+                  <button id="wizPrev" class="btn btn-soft text-sm hidden" type="button">Quay lại</button>
+                  <div class="ml-auto flex gap-2">
+                    <button id="wizSkip" class="btn btn-soft text-sm hidden" type="button">Để sau</button>
+                    <button id="wizNext" class="btn btn-primary text-sm" type="button">Tiếp theo</button>
+                    <button id="wizFinish" class="btn btn-primary text-sm hidden" type="submit">Hoàn tất</button>
+                  </div>
+                </div>
+              </form>
+            </div>`;
+        },
+        celebrateModal() {
+          return `
+            <div class="absolute inset-0" data-close="celebrate"></div>
+            <div class="modal-card relative max-w-lg text-center px-5 py-6" role="dialog" aria-modal="true" aria-labelledby="celebrateTitle" tabindex="-1" data-modal-card="celebrate">
+              <div id="celeFx" class="cele-wrap" aria-hidden="true"></div>
+              <div class="relative z-10">
+                <div id="celeFlmBox" class="mx-auto h-16 w-16 rounded-2xl flex items-center justify-center"></div>
+                <p class="mt-3 text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Chúc mừng</p>
+                <h3 id="celebrateTitle" class="mt-1 text-xl font-extrabold text-[color:var(--ink)]">Hai bạn vừa chạm cột mốc!</h3>
+                <p id="celeName" class="mt-2 text-lg font-bold text-pink-600">100 ngày yêu</p>
+                <p id="celeDate" class="mt-1 text-sm text-[color:var(--ink2)]">Đạt vào: --</p>
+                <p class="mt-3 text-sm text-[color:var(--ink2)]">Hồng hạc mang cúp tình yêu tới trao cho hai bạn ✨</p>
+                <div class="mt-5"><button id="btnCeleClose" class="btn btn-primary text-sm" type="button">Tuyệt vời</button></div>
+              </div>
+            </div>`;
+        }
+      };
+
+      const UI = {
+        cacheStatic() {
+          const ids = ["ambient","mainContent","heroFlamingoBox","btnOpenSettings","btnOpenWizard","timerNote","startDateText","timerAria","nextMsName","nextMsDate","nextMsLeft","nextMsPct","nextMsBar","btnQuickEdit","profiles","milestones","eventForm","evEditId","evTitle","evCat","evDate","evNote","evRepeat","evSubmitBtn","evCancelEdit","evCount","eventList","btnFooterSettings","btnFooterWizard","toast","toastText","modalSettings","modalWizard","modalCelebrate"];
+          ids.forEach(id => App.refs[id] = document.getElementById(id));
+          document.querySelectorAll("[data-t]").forEach(el => App.runtime.timerEls[el.dataset.t] = el);
+        },
+        renderModals() {
+          App.refs.modalSettings.innerHTML = Templates.settingsModal();
+          App.refs.modalWizard.innerHTML = Templates.wizardModal();
+          App.refs.modalCelebrate.innerHTML = Templates.celebrateModal();
+          this.cacheDynamic();
+          this.injectFlamingos();
+        },
+        cacheDynamic() {
+          const ids = ["settingsForm","s_start","btnResetAll","btnSaveSettings","btnExportJson","btnImportJson","importJsonInput","wizardForm","w_start","wizStepText","wizDots","wizPrev","wizNext","wizFinish","wizSkip","wizClose","wizCloseHint","wizFlmBox","btnCeleClose","celeName","celeDate","celeFx","celeFlmBox"];
+          ids.forEach(id => App.refs[id] = document.getElementById(id));
+        },
+        injectFlamingos() {
+          const hero = `<div class="hero-flamingo h-14 w-14 flex items-center justify-center"><span class="spark s1">✦</span><span class="spark s2">❤</span><span class="spark s3">✦</span><img src="${AvatarX.data(170)}" alt="" class="h-11 w-11 object-contain"></div>`;
+          App.refs.heroFlamingoBox.innerHTML = hero;
+          if (App.refs.wizFlmBox) App.refs.wizFlmBox.innerHTML = `<div class="hero-flamingo h-16 w-16 flex items-center justify-center"><span class="spark s1">✦</span><span class="spark s2">❤</span><img src="${AvatarX.data(180)}" alt="" class="h-12 w-12 object-contain"></div>`;
+          if (App.refs.celeFlmBox) App.refs.celeFlmBox.innerHTML = `<div class="hero-flamingo h-16 w-16 flex items-center justify-center"><span class="spark s1">✦</span><span class="spark s2">❤</span><img src="${AvatarX.data(180)}" alt="" class="h-12 w-12 object-contain"></div>`;
+        },
+        ambient() {
+          const layer = App.refs.ambient;
+          layer.innerHTML = "";
+          const f = AvatarX.tiny();
+          const add = (kind, i) => {
+            const el = document.createElement("span");
+            el.className = `float ${kind}`;
+            if (kind === "heart") el.textContent = i % 2 ? "♡" : "❤";
+            if (kind === "flm") el.style.backgroundImage = `url("${f}")`;
+            el.style.left = `${Math.random() * 100}%`;
+            el.style.animationDuration = `${18 + Math.random() * 18}s`;
+            el.style.animationDelay = `${-Math.random() * 20}s`;
+            el.style.setProperty("--dx", `${Math.round(Math.random() * 120 - 60)}px`);
+            el.style.setProperty("--r", `${Math.round(Math.random() * 40 - 20)}deg`);
+            el.style.setProperty("--s", (0.75 + Math.random() * 0.9).toFixed(2));
+            el.style.setProperty("--o", (0.15 + Math.random() * 0.18).toFixed(2));
+            layer.appendChild(el);
+          };
+          for (let i = 0; i < 18; i++) add("heart", i);
+          for (let i = 0; i < 10; i++) add("flm", i);
+        },
+        toast(msg) {
+          App.refs.toastText.textContent = msg;
+          App.refs.toast.classList.add("show");
+          clearTimeout(App.runtime.toastTimer);
+          App.runtime.toastTimer = setTimeout(() => App.refs.toast.classList.remove("show"), 2600);
+        },
+        modalEl(name) {
+          return ({ settings: App.refs.modalSettings, wizard: App.refs.modalWizard, celebrate: App.refs.modalCelebrate })[name] || null;
+        },
+        modalCard(name) {
+          return this.modalEl(name)?.querySelector("[data-modal-card]") || null;
+        },
+        getFocusable(root) {
+          if (!root) return [];
+          const selector = "button:not([disabled]), [href], input:not([disabled]):not([type='hidden']), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])";
+          return Array.from(root.querySelectorAll(selector)).filter(el => {
+            if (!(el instanceof HTMLElement)) return false;
+            if (el.closest(".hidden")) return false;
+            return el.offsetParent !== null || el === document.activeElement;
+          });
+        },
+        focusModal(name) {
+          const card = this.modalCard(name);
+          if (!(card instanceof HTMLElement)) return;
+          const focusables = this.getFocusable(card);
+          const target = focusables[0] || card;
+          try { target.focus({ preventScroll: true }); }
+          catch (_e) { if (typeof target.focus === "function") target.focus(); }
+        },
+        trapFocusWithinTopModal(e) {
+          if (e.key !== "Tab" || !App.runtime.modalStack.length) return;
+          const top = App.runtime.modalStack[App.runtime.modalStack.length - 1];
+          const card = this.modalCard(top);
+          if (!(card instanceof HTMLElement)) return;
+          const focusables = this.getFocusable(card);
+          if (!focusables.length) {
+            e.preventDefault();
+            card.focus();
+            return;
+          }
+          const first = focusables[0];
+          const last = focusables[focusables.length - 1];
+          const active = document.activeElement;
+          if (e.shiftKey && active === first) {
+            e.preventDefault();
+            last.focus();
+            return;
+          }
+          if (!e.shiftKey && active === last) {
+            e.preventDefault();
+            first.focus();
+            return;
+          }
+          if (!(active instanceof Node) || !card.contains(active)) {
+            e.preventDefault();
+            first.focus();
+          }
+        },
+        openModal(name) {
+          const el = this.modalEl(name);
+          if (!el || el.classList.contains("open")) return;
+          if (document.activeElement instanceof HTMLElement) {
+            App.runtime.modalLastFocus[name] = document.activeElement;
+          }
+          el.classList.add("open");
+          el.setAttribute("aria-hidden", "false");
+          App.runtime.modalStack.push(name);
+          document.body.classList.add("overflow-hidden");
+          if (App.refs.mainContent) App.refs.mainContent.setAttribute("aria-hidden", "true");
+          requestAnimationFrame(() => this.focusModal(name));
+        },
+        closeModal(name) {
+          const el = this.modalEl(name);
+          if (!el || !el.classList.contains("open")) return;
+          el.classList.remove("open");
+          el.setAttribute("aria-hidden", "true");
+          App.runtime.modalStack = App.runtime.modalStack.filter(n => n !== name);
+          if (!App.runtime.modalStack.length) {
+            document.body.classList.remove("overflow-hidden");
+            if (App.refs.mainContent) App.refs.mainContent.removeAttribute("aria-hidden");
+          } else {
+            const nextTop = App.runtime.modalStack[App.runtime.modalStack.length - 1];
+            requestAnimationFrame(() => this.focusModal(nextTop));
+          }
+          const restore = App.runtime.modalLastFocus[name];
+          if (restore && document.contains(restore) && typeof restore.focus === "function") {
+            requestAnimationFrame(() => {
+              try { restore.focus({ preventScroll: true }); }
+              catch (_e) { try { restore.focus(); } catch (__e) {} }
+            });
+          }
+          delete App.runtime.modalLastFocus[name];
+        },
+        esc(s) { return Templates.esc(s); },
+        setTimer(k, v) {
+          const el = App.runtime.timerEls[k];
+          if (!el) return;
+          const txt = String(v).padStart(2, "0");
+          if (el.dataset.last === txt) return;
+          el.textContent = txt;
+          el.dataset.last = txt;
+          el.classList.remove("chg"); void el.offsetWidth; el.classList.add("chg");
+        },
+        renderTimer() {
+          const start = getStart();
+          const now = new Date();
+          if (!start) {
+            ["years","months","days","hours","minutes","seconds"].forEach(k => this.setTimer(k, 0));
+            App.refs.startDateText.textContent = "Chưa thiết lập";
+            App.refs.timerNote.textContent = "Hãy mở Wizard hoặc Cài đặt để nhập ngày bắt đầu yêu.";
+            App.refs.timerAria.textContent = "";
+            return;
+          }
+          App.refs.startDateText.textContent = DateX.fmt(start, true);
+          if (start > now) {
+            ["years","months","days","hours","minutes","seconds"].forEach(k => this.setTimer(k, 0));
+            App.refs.timerNote.textContent = "Ngày bắt đầu yêu đang ở tương lai. Vui lòng chỉnh lại.";
+            App.refs.timerAria.textContent = "Ngày bắt đầu yêu đang ở tương lai";
+            return;
+          }
+          const d = DateX.elapsedCalendar(start, now);
+          this.setTimer("years", d.years); this.setTimer("months", d.months); this.setTimer("days", d.days);
+          this.setTimer("hours", d.hours); this.setTimer("minutes", d.minutes); this.setTimer("seconds", d.seconds);
+          App.refs.timerNote.textContent = `Hai bạn đã bên nhau ${d.years} năm ${d.months} tháng ${d.days} ngày.`;
+          App.refs.timerAria.textContent = `${d.years} năm ${d.months} tháng ${d.days} ngày ${d.hours} giờ ${d.minutes} phút ${d.seconds} giây`;
+        },
+        renderProfiles() {
+          const now = new Date();
+          const people = [
+            { key: "personA", label: "Người 1" },
+            { key: "personB", label: "Người 2" },
+          ];
+          App.refs.profiles.innerHTML = people.map(it => {
+            const p = App.state.couple[it.key];
+            const b = DateX.parseDate(p.birthday);
+            const age = ProfileX.age(b, now);
+            const z = ProfileX.zodiac(b);
+            const e = z ? EL_META[z.element] : null;
+            const name = p.name?.trim() || it.label;
+            return `
+              <article class="rounded-2xl border border-white/70 bg-white/65 p-4">
+                <div class="flex items-start gap-4">
+                  <div class="avatar-wrap h-20 w-20"><img src="${AvatarX.src(p)}" alt="Avatar ${this.esc(name)}" class="h-full w-full rounded-[14px] object-cover bg-white/70" onerror="this.onerror=null;this.src='${AvatarX.data()}'"></div>
+                  <div class="min-w-0 flex-1">
+                    <span class="pill text-pink-600">🦩 ${it.label}</span>
+                    <h3 class="mt-2 text-lg font-bold text-[color:var(--ink)] truncate">${this.esc(name)}</h3>
+                    <p class="text-sm text-[color:var(--ink2)]">${this.esc(GENDER_LABEL[p.gender] || "Không rõ")}</p>
+                  </div>
+                </div>
+                <div class="mt-4 grid grid-cols-2 gap-3">
+                  <div class="rounded-2xl border border-white/70 bg-white/65 p-3"><p class="text-xs uppercase tracking-[.1em] text-[color:var(--ink2)]">Ngày sinh</p><p class="mt-1 text-sm font-semibold text-[color:var(--ink)]">${b ? this.esc(DateX.fmt(b)) : "Chưa nhập"}</p></div>
+                  <div class="rounded-2xl border border-white/70 bg-white/65 p-3"><p class="text-xs uppercase tracking-[.1em] text-[color:var(--ink2)]">Tuổi</p><p class="mt-1 text-sm font-semibold text-[color:var(--ink)]">${age == null ? "Chưa có" : age + " tuổi"}</p></div>
+                </div>
+                <div class="mt-3 flex flex-wrap gap-2">
+                  <span class="pill"><span>✨</span><span>${z ? this.esc(z.name) : "Chưa có cung"}</span></span>
+                  <span class="pill" style="background:${e ? e.bg : "rgba(255,255,255,.72)"};color:${e ? e.color : "var(--ink2)"}"><span>â—</span><span>${e ? this.esc(e.label) : "Nguyên tố"}</span></span>
+                </div>
+              </article>`;
+          }).join("");
+        },
+        renderMilestonesAndNext() {
+          const start = getStart();
+          const now = new Date();
+          if (!start || start > now) {
+            App.refs.milestones.innerHTML = MILESTONES.map(m => `
+              <div class="badge off">
+                <div class="flex justify-between items-center"><span class="pill">🔒 Khoá</span><span class="text-xs text-[color:var(--ink2)]">--</span></div>
+                <p class="mt-3 text-sm font-bold text-[color:var(--ink)]">${this.esc(m.label)}</p>
+                <p class="mt-1 text-xs text-[color:var(--ink2)]">Thiết lập ngày bắt đầu để tính.</p>
+              </div>
+            `).join("");
+            App.refs.nextMsName.textContent = "Chưa có dữ liệu";
+            App.refs.nextMsDate.textContent = "Thiết lập ngày bắt đầu yêu";
+            App.refs.nextMsLeft.textContent = "--";
+            App.refs.nextMsPct.textContent = "0%";
+            App.refs.nextMsBar.style.width = "0%";
+            return;
+          }
+          const list = MilestoneX.build(start, now);
+          const shown = new Set(App.state.celebrations.shownMilestoneIds || []);
+          App.refs.milestones.innerHTML = list.map(m => `
+            <div class="badge ${m.achieved ? "on" : "off"}">
+              <div class="flex justify-between items-center gap-2">
+                <span class="pill ${m.achieved ? "text-pink-600" : ""}">${m.achieved ? "🦩🏆 Đạt" : "🔒 Khoá"}</span>
+                ${m.achieved && !shown.has(m.id) ? '<span class="text-[10px] font-bold uppercase tracking-[.12em] text-amber-500">Mới!</span>' : '<span class="text-xs text-[color:var(--ink2)]"> </span>'}
+              </div>
+              <p class="mt-3 text-sm font-bold text-[color:var(--ink)]">${this.esc(m.label)}</p>
+              <p class="mt-1 text-xs text-[color:var(--ink2)]">${m.achieved ? "Đạt vào" : "Dự kiến"}: ${this.esc(DateX.fmt(m.date))}</p>
+            </div>
+          `).join("");
+
+          const next = MilestoneX.next(list, now);
+          if (!next) {
+            App.refs.nextMsName.textContent = "Đã chinh phục tất cả!";
+            App.refs.nextMsDate.textContent = "Hai bạn đã vượt mọi cột mốc hiện có 💖";
+            App.refs.nextMsLeft.textContent = "Hoàn tất";
+            App.refs.nextMsPct.textContent = "100%";
+            App.refs.nextMsBar.style.width = "100%";
+          } else {
+            App.refs.nextMsName.textContent = next.label;
+            App.refs.nextMsDate.textContent = `Dự kiến đạt: ${DateX.fmt(next.date, true)}`;
+            const left = Math.max(0, Math.ceil((next.date - now) / 86400000));
+            App.refs.nextMsLeft.textContent = left === 0 ? "Hôm nay" : `${left} ngày`;
+            const total = Math.max(1, next.date - start);
+            const pct = Math.round(DateX.clamp((now - start) / total, 0, 1) * 100);
+            App.refs.nextMsPct.textContent = pct + "%";
+            App.refs.nextMsBar.style.width = pct + "%";
+          }
+
+          Celebrate.enqueue(list);
+        },
+        renderEvents() {
+          const items = EventX.sorted(App.state.events || [], new Date());
+          App.refs.evCount.textContent = `${items.length} sự kiện`;
+          if (!items.length) {
+            App.refs.eventList.innerHTML = `<div class="rounded-2xl border border-white/70 bg-white/65 p-4 text-sm text-[color:var(--ink2)]">Chưa có ngày đặc biệt nào. Hãy thêm sự kiện đầu tiên.</div>`;
+            return;
+          }
+          App.refs.eventList.innerHTML = items.map(({ ev, meta }) => {
+            const title = this.esc(ev.title || "Sự kiện");
+            const note = this.esc(ev.note || "");
+            const cat = this.esc(CAT_LABEL[ev.category] || "Khác");
+            const isToday = meta.today;
+            const status = meta.days == null ? "Không xác định" : (meta.days === 0 ? "Hôm nay" : (meta.days > 0 ? `Còn ${meta.days} ngày` : `Đã qua ${Math.abs(meta.days)} ngày`));
+            const repeat = ev.repeatAnnual ? "Lặp hàng năm" : "Một lần";
+            return `
+              <article class="event-item ${isToday ? "today" : ""}">
+                <div class="flex items-start justify-between gap-3">
+                  <div class="min-w-0">
+                    <div class="flex flex-wrap gap-2">
+                      <span class="pill text-pink-600">${cat}</span>
+                      <span class="pill">${repeat}</span>
+                      <span class="pill ${isToday ? "text-pink-600" : ""}">${status}</span>
+                    </div>
+                    <h4 class="mt-2 text-sm font-bold text-[color:var(--ink)] break-words">${title}</h4>
+                    ${note ? `<p class="mt-1 text-xs text-[color:var(--ink2)] break-words">${note}</p>` : ""}
+                    <div class="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-1 text-xs text-[color:var(--ink2)]">
+                      <p>Ngày gốc: ${meta.base ? this.esc(DateX.fmt(meta.base)) : "Không hợp lệ"}</p>
+                      <p>Lần tới: ${meta.next ? this.esc(DateX.fmt(meta.next)) : "Không xác định"}</p>
+                    </div>
+                  </div>
+                  <div class="flex flex-col gap-2 shrink-0">
+                    <button class="btn btn-soft !rounded-xl px-3 py-2 text-xs" type="button" data-act="edit" data-id="${this.esc(ev.id)}">Sửa</button>
+                    <button class="btn btn-danger !rounded-xl px-3 py-2 text-xs" type="button" data-act="del" data-id="${this.esc(ev.id)}">Xoá</button>
+                  </div>
+                </div>
+              </article>`;
+          }).join("");
+        },
+        fillPersonForm(prefix, person) {
+          id(`${prefix}_name`).value = person.name || "";
+          id(`${prefix}_birthday`).value = person.birthday || "";
+          id(`${prefix}_gender`).value = person.gender || "khong_tiet_lo";
+          id(`${prefix}_url`).value = person.avatarType === "url" ? (person.avatarSourceUrl || person.avatarUrl || "") : "";
+          id(`${prefix}_file`).value = "";
+          id(`${prefix}_default`).checked = !person.avatarUrl;
+          this.previewAvatar(prefix, person);
+        },
+        fillSettingsForm() {
+          const start = getStart();
+          App.refs.s_start.value = start ? DateX.toDateTimeInput(start) : "";
+          this.fillPersonForm("sA", App.state.couple.personA);
+          this.fillPersonForm("sB", App.state.couple.personB);
+        },
+        fillWizardForm() {
+          const start = getStart() || new Date();
+          App.refs.w_start.value = DateX.toDateTimeInput(start);
+          this.fillPersonForm("wA", App.state.couple.personA);
+          this.fillPersonForm("wB", App.state.couple.personB);
+          App.runtime.wizardStep = 0;
+          this.updateWizardStep();
+        },
+        previewAvatar(prefix, fallbackPerson) {
+          const img = id(`${prefix}_preview`);
+          const fileInput = id(`${prefix}_file`);
+          const urlInput = id(`${prefix}_url`);
+          const defChk = id(`${prefix}_default`);
+          let src = "";
+          if (defChk?.checked) src = AvatarX.data();
+          else if (fileInput?.files?.[0]) {
+            src = URL.createObjectURL(fileInput.files[0]);
+            if (img.dataset.blob && img.dataset.blob !== src) URL.revokeObjectURL(img.dataset.blob);
+            img.dataset.blob = src;
+          } else if (urlInput?.value.trim()) src = urlInput.value.trim();
+          else src = AvatarX.src(fallbackPerson);
+          img.src = src || AvatarX.data();
+          img.onerror = () => { img.onerror = null; img.src = AvatarX.data(); };
+        },
+        updateWizardCloseState() {
+          if (!App.refs.wizClose) return;
+          const canCloseRequired = !!(App.runtime.wizardTouchedStart && DateX.parseDateTime(App.refs.w_start?.value?.trim?.() || ""));
+          const locked = App.runtime.wizardRequired && !canCloseRequired;
+          App.refs.wizClose.classList.toggle("wizard-close-lock", locked);
+          App.refs.wizClose.setAttribute("aria-disabled", locked ? "true" : "false");
+        },
+        updateWizardStep() {
+          const wraps = Array.from(App.refs.wizardForm.querySelectorAll("[data-step]"));
+          wraps.forEach(w => w.classList.toggle("hidden", +w.dataset.step !== App.runtime.wizardStep));
+          const dots = Array.from(App.refs.wizDots.children);
+          dots.forEach((d, i) => {
+            d.classList.toggle("active", i === App.runtime.wizardStep);
+            d.classList.toggle("done", i < App.runtime.wizardStep);
+          });
+          App.refs.wizStepText.textContent = `Bước ${App.runtime.wizardStep + 1}/3`;
+          App.refs.wizPrev.classList.toggle("hidden", App.runtime.wizardStep === 0);
+          App.refs.wizNext.classList.toggle("hidden", App.runtime.wizardStep === 2);
+          App.refs.wizFinish.classList.toggle("hidden", App.runtime.wizardStep !== 2);
+          if (App.refs.wizSkip) {
+            App.refs.wizSkip.classList.toggle("hidden", App.runtime.wizardRequired);
+          }
+          if (App.refs.wizClose) {
+            this.updateWizardCloseState();
+          }
+          if (App.refs.wizCloseHint) {
+            if (App.runtime.wizardRequired) {
+              App.refs.wizCloseHint.classList.remove("hidden");
+              App.refs.wizCloseHint.textContent = "Thiết lập lần đầu: hãy nhập ít nhất ngày bắt đầu yêu để tiếp tục.";
+            } else {
+              App.refs.wizCloseHint.classList.add("hidden");
+              App.refs.wizCloseHint.textContent = "";
+            }
+          }
+        }
+      };
+
+      const Celebrate = {
+        enqueue(list) {
+          const shown = new Set(App.state.celebrations.shownMilestoneIds || []);
+          list.filter(m => m.achieved && !shown.has(m.id) && !App.runtime.celebrationQueued.has(m.id))
+            .sort((a,b)=>a.date-b.date)
+            .forEach(m => {
+              App.runtime.celebrationQueue.push(m);
+              App.runtime.celebrationQueued.add(m.id);
+            });
+          this.showNext();
+        },
+        showNext() {
+          if (App.runtime.activeCelebration || !App.runtime.celebrationQueue.length) return;
+          const m = App.runtime.celebrationQueue.shift();
+          if (!m) return;
+          App.runtime.activeCelebration = m;
+          App.refs.celeName.textContent = `${m.label} yêu`;
+          App.refs.celeDate.textContent = `Đạt vào: ${DateX.fmt(m.date, true)}`;
+          this.fx();
+          UI.openModal("celebrate");
+        },
+        fx() {
+          const wrap = App.refs.celeFx;
+          if (!wrap) return;
+          wrap.innerHTML = "";
+          if (App.runtime.reducedMotion) return;
+          for (let i = 0; i < 18; i++) {
+            const s = document.createElement("span");
+            s.className = "cele-piece";
+            s.textContent = i % 3 === 0 ? "❤" : (i % 3 === 1 ? "♡" : "✦");
+            const angle = (Math.PI * 2 * i) / 18;
+            const radius = 45 + Math.random() * 100;
+            s.style.setProperty("--tx", `${Math.cos(angle) * radius}px`);
+            s.style.setProperty("--ty", `${Math.sin(angle) * radius - 25}px`);
+            s.style.setProperty("--rot", `${Math.round(Math.random() * 80 - 40)}deg`);
+            s.style.animationDelay = `${Math.random() * .15}s`;
+            wrap.appendChild(s);
+          }
+        },
+        closeCurrent() {
+          const cur = App.runtime.activeCelebration;
+          if (cur) {
+            const set = new Set(App.state.celebrations.shownMilestoneIds || []);
+            set.add(cur.id);
+            App.state.celebrations.shownMilestoneIds = Array.from(set);
+            Storage.save();
+            App.runtime.celebrationQueued.delete(cur.id);
+          }
+          App.runtime.activeCelebration = null;
+          UI.closeModal("celebrate");
+          this.showNext();
+        }
+      };
+
+      function id(x){ return document.getElementById(x); }
+
+      function emptyPerson(pid){
+        return { id: pid, name: "", birthday: "", gender: "khong_tiet_lo", avatarType: "default", avatarUrl: "", avatarSourceUrl: "" };
+      }
+      function defState(){
+        return {
+          version: APP_VERSION,
+          settings: { startDate: "", timezoneMode: "local" },
+          couple: { personA: emptyPerson("a"), personB: emptyPerson("b") },
+          events: [],
+          celebrations: { shownMilestoneIds: [] },
+          ui: {}
+        };
+      }
+      function normPerson(p, fallbackId){
+        const b = emptyPerson(fallbackId);
+        if (!p || typeof p !== "object") return b;
+        return {
+          ...b,
+          id: typeof p.id === "string" ? p.id : fallbackId,
+          name: typeof p.name === "string" ? p.name : "",
+          birthday: typeof p.birthday === "string" ? p.birthday : "",
+          gender: typeof p.gender === "string" ? p.gender : "khong_tiet_lo",
+          avatarType: typeof p.avatarType === "string" ? p.avatarType : "default",
+          avatarUrl: typeof p.avatarUrl === "string" ? p.avatarUrl : "",
+          avatarSourceUrl: typeof p.avatarSourceUrl === "string" ? p.avatarSourceUrl : "",
+        };
+      }
+      function normEvent(ev){
+        if (!ev || typeof ev !== "object") return null;
+        return {
+          id: typeof ev.id === "string" && ev.id ? ev.id : uid("evt"),
+          title: typeof ev.title === "string" ? ev.title.trim().slice(0,80) : "",
+          category: CAT_LABEL[ev.category] ? ev.category : "khac",
+          date: typeof ev.date === "string" ? ev.date : "",
+          repeatAnnual: !!ev.repeatAnnual,
+          note: typeof ev.note === "string" ? ev.note.trim().slice(0,240) : "",
+          createdAt: typeof ev.createdAt === "string" ? ev.createdAt : new Date().toISOString(),
+          updatedAt: typeof ev.updatedAt === "string" ? ev.updatedAt : new Date().toISOString(),
+        };
+      }
+      function migrate(raw){
+        const base = defState();
+        if (!raw || typeof raw !== "object") return base;
+        return {
+          version: APP_VERSION,
+          settings: { ...base.settings, ...(raw.settings && typeof raw.settings === "object" ? raw.settings : {}) },
+          couple: {
+            personA: normPerson(raw.couple?.personA, "a"),
+            personB: normPerson(raw.couple?.personB, "b"),
+          },
+          events: Array.isArray(raw.events) ? raw.events.map(normEvent).filter(Boolean) : [],
+          celebrations: {
+            shownMilestoneIds: Array.isArray(raw.celebrations?.shownMilestoneIds) ? raw.celebrations.shownMilestoneIds.filter(x => typeof x === "string") : []
+          },
+          ui: (raw.ui && typeof raw.ui === "object") ? raw.ui : {}
+        };
+      }
+      function uid(prefix){
+        if (window.crypto && typeof window.crypto.randomUUID === "function") return `${prefix}_${window.crypto.randomUUID()}`;
+        return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`;
+      }
+      function getStart(){ return DateX.parseDateTime(App.state?.settings?.startDate || ""); }
+      function hasStart(){ return !!getStart(); }
+      function resetEventForm(){
+        App.refs.eventForm.reset();
+        App.refs.evCat.value = "sinh_nhat";
+        App.refs.evEditId.value = "";
+        App.refs.evSubmitBtn.textContent = "Thêm ngày đặc biệt";
+        App.refs.evCancelEdit.classList.add("hidden");
+      }
+      function setEventEdit(ev){
+        App.refs.evEditId.value = ev.id;
+        App.refs.evTitle.value = ev.title || "";
+        App.refs.evCat.value = CAT_LABEL[ev.category] ? ev.category : "khac";
+        App.refs.evDate.value = ev.date || "";
+        App.refs.evNote.value = ev.note || "";
+        App.refs.evRepeat.checked = !!ev.repeatAnnual;
+        App.refs.evSubmitBtn.textContent = "Lưu chỉnh sửa";
+        App.refs.evCancelEdit.classList.remove("hidden");
+      }
+      async function collectPerson(prefix, existing, keepIfEmpty = true){
+        const p = {
+          ...existing,
+          name: (id(`${prefix}_name`)?.value || "").trim(),
+          birthday: (id(`${prefix}_birthday`)?.value || "").trim(),
+          gender: (id(`${prefix}_gender`)?.value || "khong_tiet_lo").trim(),
+        };
+        const url = (id(`${prefix}_url`)?.value || "").trim();
+        const file = id(`${prefix}_file`)?.files?.[0] || null;
+        const useDefault = !!id(`${prefix}_default`)?.checked;
+        if (useDefault) {
+          p.avatarType = "default"; p.avatarUrl = ""; p.avatarSourceUrl = "";
+          return p;
+        }
+        if (file) {
+          const data = await AvatarX.resizeFile(file, 320);
+          p.avatarType = "upload"; p.avatarUrl = data || ""; p.avatarSourceUrl = "";
+          return p;
+        }
+        if (url) {
+          p.avatarType = "url"; p.avatarUrl = url; p.avatarSourceUrl = url;
+          return p;
+        }
+        if (keepIfEmpty && existing?.avatarUrl) {
+          p.avatarType = existing.avatarType || "upload";
+          p.avatarUrl = existing.avatarUrl || "";
+          p.avatarSourceUrl = existing.avatarSourceUrl || "";
+        } else {
+          p.avatarType = "default"; p.avatarUrl = ""; p.avatarSourceUrl = "";
+        }
+        return p;
+      }
+
+      function exportStateToJson() {
+        const safeName = `pink-flamingo-love-${DateX.toDateInput(new Date()) || "backup"}.json`;
+        const blob = new Blob([JSON.stringify(App.state, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = safeName;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 0);
+      }
+
+      async function importStateFromFile(file) {
+        if (!(file instanceof File)) return;
+        const text = await file.text();
+        let parsed;
+        try {
+          parsed = JSON.parse(text);
+        } catch (_err) {
+          throw new Error("Tệp JSON không hợp lệ.");
+        }
+
+        const nextState = migrate(parsed);
+        App.state = nextState;
+        App.runtime.celebrationQueue = [];
+        App.runtime.celebrationQueued = new Set();
+        App.runtime.activeCelebration = null;
+        UI.closeModal("celebrate");
+        if (!Storage.save()) {
+          throw new Error("Không thể lưu dữ liệu đã nhập.");
+        }
+        resetEventForm();
+        renderAll();
+      }
+
+      function renderAll(){
+        UI.renderTimer();
+        UI.renderProfiles();
+        UI.renderMilestonesAndNext();
+        UI.renderEvents();
+      }
+
+      function tick(){
+        UI.renderTimer();
+        UI.renderMilestonesAndNext();
+      }
+      function startTick(){
+        stopTick();
+        App.runtime.tick = setInterval(tick, 1000);
+      }
+      function stopTick(){
+        if (App.runtime.tick) clearInterval(App.runtime.tick);
+        App.runtime.tick = null;
+      }
+
+      function openSettings(){
+        UI.fillSettingsForm();
+        UI.openModal("settings");
+      }
+      function openWizard(force = false){
+        App.runtime.wizardRequired = !!force;
+        App.runtime.wizardTouchedStart = false;
+        UI.fillWizardForm();
+        UI.openModal("wizard");
+      }
+      function closeWizard(){
+        if (App.runtime.wizardRequired && !hasStart()) {
+          const draftStart = App.refs.w_start ? App.refs.w_start.value.trim() : "";
+          const parsedDraft = draftStart ? DateX.parseDateTime(draftStart) : null;
+          if (App.runtime.wizardTouchedStart && parsedDraft) {
+            App.state.settings.startDate = draftStart;
+            Storage.save();
+            renderAll();
+            App.runtime.wizardRequired = false;
+            UI.toast("Đã lưu tạm ngày bắt đầu yêu. Bạn có thể bổ sung hồ sơ sau.");
+          } else {
+            UI.toast("Hoàn tất bước ngày bắt đầu yêu trước khi đóng Wizard.");
+            return;
+          }
+        }
+        UI.closeModal("wizard");
+      }
+
+      function bindStatic(){
+        [App.refs.btnOpenSettings, App.refs.btnFooterSettings, App.refs.btnQuickEdit].forEach(btn => btn?.addEventListener("click", openSettings));
+        [App.refs.btnOpenWizard, App.refs.btnFooterWizard].forEach(btn => btn?.addEventListener("click", () => openWizard(false)));
+
+        App.refs.eventForm.addEventListener("submit", (e) => {
+          e.preventDefault();
+          const title = App.refs.evTitle.value.trim();
+          const date = App.refs.evDate.value.trim();
+          if (!title) { UI.toast("Vui lòng nhập tên sự kiện."); App.refs.evTitle.focus(); return; }
+          if (!DateX.parseDate(date)) { UI.toast("Ngày sự kiện không hợp lệ."); App.refs.evDate.focus(); return; }
+          const nowIso = new Date().toISOString();
+          const payload = {
+            id: App.refs.evEditId.value || uid("evt"),
+            title, category: App.refs.evCat.value, date,
+            repeatAnnual: !!App.refs.evRepeat.checked,
+            note: App.refs.evNote.value.trim(),
+            updatedAt: nowIso
+          };
+          if (App.refs.evEditId.value) {
+            App.state.events = App.state.events.map(x => x.id === payload.id ? { ...x, ...payload } : x);
+            UI.toast("Đã cập nhật sự kiện.");
+          } else {
+            App.state.events.push({ ...payload, createdAt: nowIso });
+            UI.toast("Đã thêm ngày đặc biệt.");
+          }
+          App.state.events = App.state.events.map(normEvent).filter(Boolean);
+          Storage.save();
+          resetEventForm();
+          UI.renderEvents();
+        });
+
+        App.refs.evCancelEdit.addEventListener("click", resetEventForm);
+
+        App.refs.eventList.addEventListener("click", (e) => {
+          const btn = e.target.closest("[data-act]");
+          if (!btn) return;
+          const act = btn.dataset.act, idv = btn.dataset.id;
+          const ev = App.state.events.find(x => x.id === idv);
+          if (!ev) return;
+          if (act === "edit") {
+            setEventEdit(ev);
+            App.refs.evTitle.focus();
+            App.refs.eventForm.scrollIntoView({ behavior: App.runtime.reducedMotion ? "auto" : "smooth", block: "nearest" });
+          } else if (act === "del") {
+            if (!confirm(`Xoá sự kiện "${ev.title}"?`)) return;
+            App.state.events = App.state.events.filter(x => x.id !== idv);
+            Storage.save();
+            resetEventForm();
+            UI.renderEvents();
+            UI.toast("Đã xoá sự kiện.");
+          }
+        });
+      }
+
+      function bindModalEvents(){
+        App.refs.modalSettings.addEventListener("click", (e) => {
+          const closeBtn = e.target.closest("[data-close='settings']");
+          if (closeBtn) { UI.closeModal("settings"); }
+        });
+
+        App.refs.modalWizard.addEventListener("click", (e) => {
+          if (e.target.closest("[data-close='wizard']")) closeWizard();
+        });
+
+        App.refs.modalCelebrate.addEventListener("click", (e) => {
+          if (e.target.closest("[data-close='celebrate']")) Celebrate.closeCurrent();
+        });
+
+        document.addEventListener("keydown", (e) => {
+          if (e.key === "Tab" && App.runtime.modalStack.length) {
+            UI.trapFocusWithinTopModal(e);
+            return;
+          }
+          if (e.key !== "Escape" || !App.runtime.modalStack.length) return;
+          const top = App.runtime.modalStack[App.runtime.modalStack.length - 1];
+          if (top === "wizard") { closeWizard(); return; }
+          if (top === "celebrate") { Celebrate.closeCurrent(); return; }
+          UI.closeModal(top);
+        });
+
+        App.refs.settingsForm.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          try {
+            App.refs.btnSaveSettings.disabled = true;
+            App.refs.btnSaveSettings.textContent = "Đang lưu...";
+            const startInput = App.refs.s_start.value.trim();
+            if (startInput && !DateX.parseDateTime(startInput)) {
+              UI.toast("Ngày bắt đầu yêu không hợp lệ.");
+              App.refs.s_start.focus();
+              return;
+            }
+            const a = await collectPerson("sA", App.state.couple.personA, true);
+            const b = await collectPerson("sB", App.state.couple.personB, true);
+            App.state.settings.startDate = startInput;
+            App.state.couple.personA = normPerson(a, "a");
+            App.state.couple.personB = normPerson(b, "b");
+            if (Storage.save()) {
+              renderAll();
+              UI.closeModal("settings");
+              UI.toast("Đã lưu cài đặt.");
+            }
+          } catch (err) {
+            console.error(err);
+            UI.toast(err?.message || "Không thể lưu cài đặt.");
+          } finally {
+            App.refs.btnSaveSettings.disabled = false;
+            App.refs.btnSaveSettings.textContent = "Lưu thay đổi";
+          }
+        });
+
+        App.refs.btnExportJson.addEventListener("click", () => {
+          exportStateToJson();
+          UI.toast("Đã xuất file JSON sao lưu.");
+        });
+
+        App.refs.btnImportJson.addEventListener("click", () => {
+          App.refs.importJsonInput.value = "";
+          App.refs.importJsonInput.click();
+        });
+
+        App.refs.importJsonInput.addEventListener("change", async (e) => {
+          const file = e.target.files && e.target.files[0];
+          if (!file) return;
+          const ok = confirm("Nhập dữ liệu JSON sẽ ghi đè dữ liệu hiện tại trên thiết bị này. Tiếp tục?");
+          if (!ok) {
+            App.refs.importJsonInput.value = "";
+            return;
+          }
+          try {
+            await importStateFromFile(file);
+            UI.fillSettingsForm();
+            UI.toast("Đã nhập dữ liệu JSON.");
+          } catch (err) {
+            console.error(err);
+            UI.toast(err?.message || "Không thể nhập dữ liệu JSON.");
+          } finally {
+            App.refs.importJsonInput.value = "";
+          }
+        });
+
+        App.refs.btnResetAll.addEventListener("click", () => {
+          if (!confirm("Đặt lại toàn bộ dữ liệu tình yêu trên thiết bị này?")) return;
+          stopTick();
+          Storage.reset();
+          App.state = defState();
+          App.runtime.celebrationQueue = [];
+          App.runtime.celebrationQueued = new Set();
+          App.runtime.activeCelebration = null;
+          resetEventForm();
+          renderAll();
+          UI.closeModal("settings");
+          openWizard(true);
+          startTick();
+          UI.toast("Đã đặt lại dữ liệu.");
+        });
+
+        App.refs.wizClose.addEventListener("click", () => closeWizard());
+
+        App.refs.wizSkip.addEventListener("click", () => closeWizard());
+
+        App.refs.w_start.addEventListener("input", () => {
+          App.runtime.wizardTouchedStart = true;
+          UI.updateWizardCloseState();
+        });
+
+        App.refs.wizPrev.addEventListener("click", () => {
+          if (App.runtime.wizardStep > 0) { App.runtime.wizardStep--; UI.updateWizardStep(); }
+        });
+
+        App.refs.wizNext.addEventListener("click", () => {
+          if (App.runtime.wizardStep === 0) {
+            if (!DateX.parseDateTime(App.refs.w_start.value.trim())) { UI.toast("Vui lòng chọn ngày bắt đầu yêu hợp lệ."); App.refs.w_start.focus(); return; }
+          }
+          if (App.runtime.wizardStep < 2) { App.runtime.wizardStep++; UI.updateWizardStep(); }
+        });
+
+        App.refs.wizardForm.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          if (App.runtime.wizardStep !== 2) return;
+          try {
+            App.refs.wizFinish.disabled = true;
+            App.refs.wizFinish.textContent = "Đang lưu...";
+            const startInput = App.refs.w_start.value.trim();
+            if (!DateX.parseDateTime(startInput)) {
+              UI.toast("Ngày bắt đầu yêu không hợp lệ.");
+              App.runtime.wizardStep = 0;
+              UI.updateWizardStep();
+              App.refs.w_start.focus();
+              return;
+            }
+            const a = await collectPerson("wA", App.state.couple.personA, false);
+            const b = await collectPerson("wB", App.state.couple.personB, false);
+            App.state.settings.startDate = startInput;
+            App.state.couple.personA = normPerson(a, "a");
+            App.state.couple.personB = normPerson(b, "b");
+            if (Storage.save()) {
+              App.runtime.wizardRequired = false;
+              UI.closeModal("wizard");
+              renderAll();
+              UI.toast("Hoàn tất thiết lập tình yêu hồng hạc!");
+            }
+          } catch (err) {
+            console.error(err);
+            UI.toast(err?.message || "Không thể lưu Wizard.");
+          } finally {
+            App.refs.wizFinish.disabled = false;
+            App.refs.wizFinish.textContent = "Hoàn tất";
+          }
+        });
+
+        App.refs.btnCeleClose.addEventListener("click", () => Celebrate.closeCurrent());
+
+        [["sA","personA"],["sB","personB"],["wA","personA"],["wB","personB"]].forEach(([prefix, personKey]) => {
+          id(`${prefix}_url`).addEventListener("input", () => {
+            if (id(`${prefix}_url`).value.trim()) id(`${prefix}_default`).checked = false;
+            UI.previewAvatar(prefix, App.state.couple[personKey]);
+          });
+          id(`${prefix}_file`).addEventListener("change", () => {
+            if (id(`${prefix}_file`).files?.length) id(`${prefix}_default`).checked = false;
+            UI.previewAvatar(prefix, App.state.couple[personKey]);
+          });
+          id(`${prefix}_default`).addEventListener("change", () => UI.previewAvatar(prefix, App.state.couple[personKey]));
+        });
+      }
+
+      function bindRuntimeEvents(){
+        document.addEventListener("visibilitychange", () => {
+          if (document.hidden) {
+            stopTick();
+            return;
+          }
+          tick();
+          startTick();
+        });
+
+        window.addEventListener("pagehide", stopTick);
+
+        window.addEventListener("storage", (e) => {
+          if (e.storageArea !== localStorage || e.key !== STORAGE_KEY) return;
+          App.state = Storage.load();
+          renderAll();
+          UI.toast("Dữ liệu đã được đồng bộ từ tab khác.");
+        });
+      }
+
+      function init(){
+        UI.cacheStatic();
+        UI.renderModals();
+        UI.ambient();
+        bindStatic();
+        bindModalEvents();
+        bindRuntimeEvents();
+        App.state = Storage.load();
+        resetEventForm();
+        renderAll();
+        startTick();
+        if (!hasStart()) {
+          openWizard(true);
+          UI.toast("Bắt đầu với Wizard để thiết lập cặp đôi.");
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", init);
+    })();
+  </script>
+</body>
+</html>
+
+
