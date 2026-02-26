@@ -12,6 +12,7 @@
   const dispatch = createEventDispatcher();
 
   let startDate = "";
+  let authPanelMode = "ultra_minimal";
   let personA = emptyDraft();
   let personB = emptyDraft();
   let errorText = "";
@@ -49,6 +50,7 @@
 
   function hydrateFromState() {
     startDate = state?.settings?.startDate || "";
+    authPanelMode = state?.ui?.authPanelMode === "standard" ? "standard" : "ultra_minimal";
     personA = toDraft(state?.couple?.personA);
     personB = toDraft(state?.couple?.personB);
     errorText = "";
@@ -58,6 +60,7 @@
     const s = state || {};
     return JSON.stringify({
       startDate: s?.settings?.startDate || "",
+      authPanelMode: s?.ui?.authPanelMode || "ultra_minimal",
       a: s?.couple?.personA || {},
       b: s?.couple?.personB || {},
     });
@@ -153,6 +156,7 @@
         startDate,
         personA: composePerson(state?.couple?.personA, personA, "a"),
         personB: composePerson(state?.couple?.personB, personB, "b"),
+        ui: { authPanelMode },
       });
       toast("Đã lưu cài đặt.");
       dispatch("saved");
@@ -233,6 +237,52 @@
         <p class="mt-2 text-xs text-[color:var(--ink2)]">
           Dữ liệu sẽ được lưu vào phòng chung hiện tại của hai bạn.
         </p>
+      </div>
+
+      <div class="mt-4 rounded-2xl border border-white/70 bg-white/65 p-4">
+        <p class="text-sm font-semibold text-[color:var(--ink)]">Hiển thị panel đăng nhập & ghép cặp</p>
+        <p class="mt-1 text-xs text-[color:var(--ink2)]">Chọn kiểu gọn nhẹ hoặc đầy đủ thông tin.</p>
+        <div class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <label
+            class={`flex cursor-pointer items-start gap-3 rounded-2xl border px-3 py-3 text-sm transition ${
+              authPanelMode === "ultra_minimal"
+                ? "border-pink-300 bg-pink-50/80 shadow-sm shadow-pink-100"
+                : "border-pink-100/70 bg-white/70 hover:border-pink-200"
+            }`}
+          >
+            <input
+              class="mt-1 h-4 w-4 accent-pink-500"
+              type="radio"
+              name="auth_panel_mode"
+              value="ultra_minimal"
+              bind:group={authPanelMode}
+            />
+            <span>
+              <span class="block font-semibold text-[color:var(--ink)]">Siêu tối giản</span>
+              <span class="block text-xs text-[color:var(--ink2)]">Tập trung thao tác nhanh, ít nội dung.</span>
+            </span>
+          </label>
+
+          <label
+            class={`flex cursor-pointer items-start gap-3 rounded-2xl border px-3 py-3 text-sm transition ${
+              authPanelMode === "standard"
+                ? "border-pink-300 bg-pink-50/80 shadow-sm shadow-pink-100"
+                : "border-pink-100/70 bg-white/70 hover:border-pink-200"
+            }`}
+          >
+            <input
+              class="mt-1 h-4 w-4 accent-pink-500"
+              type="radio"
+              name="auth_panel_mode"
+              value="standard"
+              bind:group={authPanelMode}
+            />
+            <span>
+              <span class="block font-semibold text-[color:var(--ink)]">Tiêu chuẩn</span>
+              <span class="block text-xs text-[color:var(--ink2)]">Hiển thị thêm hướng dẫn và thông tin ghép cặp.</span>
+            </span>
+          </label>
+        </div>
       </div>
 
       <div class="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-2">

@@ -367,9 +367,14 @@ export const lingoActions = {
     return updateState((draft) => {
       draft.settings = draft.settings || {};
       draft.couple = draft.couple || {};
+      draft.ui = draft.ui && typeof draft.ui === "object" ? draft.ui : {};
       draft.settings.startDate = typeof input.startDate === "string" ? input.startDate : "";
       draft.couple.personA = normalizePerson(input.personA || draft.couple.personA, "a");
       draft.couple.personB = normalizePerson(input.personB || draft.couple.personB, "b");
+      const nextMode = input?.ui?.authPanelMode;
+      if (nextMode === "ultra_minimal" || nextMode === "standard") {
+        draft.ui.authPanelMode = nextMode;
+      }
     });
   },
   saveStartDate(startDate) {

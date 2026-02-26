@@ -1,4 +1,4 @@
-<script>
+﻿<script>
   import { createEventDispatcher, onDestroy, onMount } from "svelte";
   import {
     createPairRoom,
@@ -19,6 +19,8 @@
   export let currentRoomId = "";
   export let syncStatus = "connecting";
   export let hasStartDate = false;
+  export let ultraMinimal = false;
+  export let open = false;
 
   const dispatch = createEventDispatcher();
 
@@ -37,6 +39,7 @@
   let pendingAutoPairAfterAuth = false;
   let autoPairRequestedFromQuery = false;
   let authSubscription = null;
+  let detailsExpanded = false;
 
   function emitToast(message) {
     if (!message) return;
@@ -182,11 +185,22 @@
     providerPickerOpen = false;
   }
 
+  function requestClose() {
+    if (authBusy && providerPickerOpen) return;
+    providerPickerOpen = false;
+    dispatch("close");
+  }
+
   function handleKeydown(event) {
     if (event.key !== "Escape") return;
     if (providerPickerOpen) {
       event.preventDefault();
       closeProviderPicker();
+      return;
+    }
+    if (open) {
+      event.preventDefault();
+      requestClose();
     }
   }
 
@@ -483,81 +497,72 @@
   $: needsConnect = !!effectiveRoomCode && currentRoomId !== effectiveRoomCode;
   $: providerSummary = providers.length ? providers.map((p) => providerName(p.id, p.name)).join(", ") : "";
   $: canShowProviderTrigger = authConfigured && providers.length > 0 && !me;
+  $: if (!open && providerPickerOpen) providerPickerOpen = false;
 </script>
 
 <svelte:window on:keydown={handleKeydown} />
 
-<section class="card rounded-3xl p-4 sm:p-5">
-  <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-    <div>
-      <p class="text-xs font-semibold uppercase tracking-[.18em] text-pink-500/80">Bắt đầu cùng nhau</p>
-      <h2 class="mt-1 text-lg sm:text-xl font-extrabold text-[color:var(--ink)]">Đăng nhập và ghép cặp</h2>
-      <p class="mt-1 text-sm text-[color:var(--ink2)]">
-        Khi vào trang, hệ thống sẽ tự kiểm tra phiên đăng nhập của bạn. Sau đó hãy tạo mã 6 ký tự hoặc nhập mã người kia gửi.
-      </p>
+<div class={`modal ${open ? "open" : ""}`} aria-hidden={!open} on:click|self={requestClose}>
+  <div
+    class="modal-card"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="pairingPanelTitle"
+    tabindex="-1"
+    style="max-width: 74rem;"
+  >
+    <div class="flex items-center justify-between border-b border-pink-100/70 px-4 py-3 sm:px-5">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Kết nối cặp đôi</p>
+        <h3 id="pairingPanelTitle" class="text-lg font-bold text-[color:var(--ink)]">Đăng nhập & ghép cặp</h3>
+      </div>
+      <button type="button" class="btn btn-soft text-sm" on:click={requestClose}>Đóng</button>
     </div>
-    <div class="grid grid-cols-1 gap-2 w-full sm:w-auto sm:grid-cols-2 lg:flex lg:flex-wrap">
-      <button class="btn btn-soft text-sm w-full sm:w-auto" type="button" on:click={refreshAuthPairState} disabled={loading || authBusy || pairBusy}>
-        {loading ? "Đang tải..." : "Làm mới"}
-      </button>
-      {#if me}
+    <div class="max-h-[78vh] overflow-y-auto px-4 py-4 sm:px-5">
+      <section class="p-0">
+  {#if !ultraMinimal}
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-[.18em] text-pink-500/80">Kết nối cặp đôi</p>
+        <h2 class="mt-1 text-lg sm:text-xl font-extrabold text-[color:var(--ink)]">Đăng nhập & ghép cặp</h2>
+        <p class="mt-1 text-sm text-[color:var(--ink2)]">Tạo mã 6 ký tự hoặc nhập mã người kia gửi để dùng chung một phòng.</p>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <button class="btn btn-soft text-sm w-full sm:w-auto" type="button" on:click={refreshAuthPairState} disabled={loading || authBusy || pairBusy}>
+          {loading ? "Đang tải..." : "Làm mới"}
+        </button>
         <button
-          class="btn btn-soft text-sm w-full sm:w-auto"
+          class={`btn text-sm w-full sm:w-auto ${me ? "btn-soft" : "btn-primary"}`}
           type="button"
-          on:click={() => openProviderPicker({ reason: "switch-account" })}
-          disabled={authBusy || pairBusy || !providers.length}
+          on:click={me ? logout : () => openProviderPicker({ reason: "manual-login" })}
+          disabled={authBusy || pairBusy || (!me && !canShowProviderTrigger)}
         >
-          Đổi tài khoản
+          {#if me}
+            {authBusy ? "Đang thoát..." : "Đăng xuất"}
+          {:else}
+            {authBusy ? "Đang chuyển..." : "Đăng nhập"}
+          {/if}
         </button>
-        <button class="btn btn-soft text-sm w-full sm:w-auto" type="button" on:click={logout} disabled={authBusy || pairBusy}>
-          {authBusy ? "Đang thoát..." : "Đăng xuất"}
-        </button>
-      {:else if canShowProviderTrigger}
-        <button class="btn btn-primary text-sm w-full sm:w-auto" type="button" on:click={() => openProviderPicker({ reason: "manual-login" })} disabled={authBusy || pairBusy}>
-          {authBusy ? "Đang chuyển..." : "Chọn cách đăng nhập"}
-        </button>
-      {/if}
+      </div>
     </div>
-  </div>
-
-  <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-    <div class="rounded-2xl border border-white/70 bg-white/70 p-3">
-      <p class="text-xs font-semibold uppercase tracking-[.12em] text-pink-500/80">1. Đăng nhập</p>
-      <p class="mt-1 text-sm text-[color:var(--ink2)]">Kiểm tra phiên hiện có và vào lại tài khoản nhanh.</p>
-    </div>
-    <div class="rounded-2xl border border-white/70 bg-white/70 p-3">
-      <p class="text-xs font-semibold uppercase tracking-[.12em] text-pink-500/80">2. Ghép cặp</p>
-      <p class="mt-1 text-sm text-[color:var(--ink2)]">Tạo mã 6 ký tự hoặc nhập mã do người kia gửi.</p>
-    </div>
-    <div class="rounded-2xl border border-white/70 bg-white/70 p-3">
-      <p class="text-xs font-semibold uppercase tracking-[.12em] text-pink-500/80">3. Thiết lập</p>
-      <p class="mt-1 text-sm text-[color:var(--ink2)]">Mở Wizard hoặc nhập bản sao lưu JSON để bắt đầu.</p>
-    </div>
-  </div>
-
-  <div class="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-12">
-    <div class="xl:col-span-5 rounded-2xl border border-white/70 bg-white/65 p-4">
-      <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Tài khoản của bạn</p>
-
-      {#if loading}
-        <div class="mt-2 rounded-xl border border-white/70 bg-white/70 px-3 py-3 text-sm text-[color:var(--ink2)]">
-          Đang kiểm tra phiên đăng nhập...
-        </div>
-      {:else if me}
-        <div class="mt-2 space-y-2">
-          <div class="flex items-center gap-3 rounded-xl border border-white/70 bg-white/70 p-3">
-            <div class="avatar-wrap">
-              <div class="h-10 w-10 rounded-xl bg-white/90 flex items-center justify-center text-lg">
-                {providerIcon(me.provider)}
-              </div>
-            </div>
-            <div class="min-w-0">
-              <p class="text-sm font-semibold text-[color:var(--ink)] truncate">@{me.username}</p>
-              <p class="text-xs text-[color:var(--ink2)]">{providerName(me.provider)}</p>
-            </div>
-          </div>
-          <div class="flex flex-wrap gap-2 text-xs">
-            <span class="pill">Đã đăng nhập</span>
+  {/if}
+  {#if ultraMinimal}
+    <div class="mt-4 rounded-2xl border border-white/70 bg-white/65 p-3 sm:p-4">
+      <div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:gap-4">
+        <div class="min-w-0 xl:flex-1">
+          <div class="flex flex-wrap items-center gap-2 text-xs">
+            <span class="pill">
+              {#if loading}
+                Đang kiểm tra
+              {:else if me}
+                @{me.username}
+              {:else}
+                Chưa đăng nhập
+              {/if}
+            </span>
+            {#if me}
+              <span class="pill">{providerName(me.provider)}</span>
+            {/if}
             <span class="pill">
               {syncStatus === "synced"
                 ? "Đã kết nối phòng"
@@ -569,55 +574,213 @@
                       ? "Chưa ghép phòng"
                       : "Đang kiểm tra"}
             </span>
+            {#if room}
+              <span class="pill">Phòng {room.code}</span>
+            {/if}
+          </div>
+          <p class="mt-2 text-sm text-[color:var(--ink2)] truncate">
+            {#if room}
+              {room.status === "paired"
+                ? "Hai bạn đã ghép cặp và có thể dùng chung dữ liệu."
+                : `Phòng ${room.code} đang chờ người kia tham gia.`}
+            {:else}
+              Nhập mã 6 ký tự hoặc tạo mã mới để bắt đầu dùng chung một phòng.
+            {/if}
+          </p>
+          <div class="mt-3 flex flex-wrap gap-2">
+            <button class="btn btn-soft text-sm" type="button" on:click={refreshAuthPairState} disabled={loading || authBusy || pairBusy}>
+              {loading ? "Đang tải..." : "Làm mới"}
+            </button>
+            <button
+              class={`btn text-sm ${me ? "btn-soft" : "btn-primary"}`}
+              type="button"
+              on:click={me ? logout : () => openProviderPicker({ reason: "manual-login" })}
+              disabled={authBusy || pairBusy || (!me && !canShowProviderTrigger)}
+            >
+              {#if me}
+                {authBusy ? "Đang thoát..." : "Đăng xuất"}
+              {:else}
+                {authBusy ? "Đang chuyển..." : "Đăng nhập"}
+              {/if}
+            </button>
           </div>
         </div>
-      {:else}
-        <div class="mt-2 rounded-xl border border-dashed border-pink-200 bg-white/55 px-3 py-3">
-          <p class="text-sm font-medium text-[color:var(--ink)]">Chưa đăng nhập</p>
+
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center xl:flex-nowrap xl:min-w-[34rem]">
+          <input
+            id="join_code"
+            class="field h-11 min-w-0 flex-1 text-sm uppercase tracking-[.2em] text-center xl:max-w-[10rem]"
+            type="text"
+            placeholder="ABC123"
+            maxlength="6"
+            bind:value={joinCode}
+            on:input={(e) => (joinCode = normalizeCode(e.currentTarget.value))}
+            disabled={pairBusy || authBusy}
+            aria-label="Mã ghép cặp 6 ký tự"
+          />
+          <button class="btn btn-soft text-sm w-full sm:w-auto whitespace-nowrap" type="button" on:click={joinPairCode} disabled={pairBusy || authBusy || !me}>
+            {pairBusy ? "Đang xử lý..." : "Tham gia"}
+          </button>
+          <button class="btn btn-primary text-sm w-full sm:w-auto whitespace-nowrap" type="button" on:click={() => createPairCode()} disabled={pairBusy || authBusy || !me}>
+            {pairBusy ? "Đang tạo..." : "Tạo mã"}
+          </button>
+          <button class="btn btn-soft text-sm w-full sm:w-auto whitespace-nowrap" type="button" on:click={() => (detailsExpanded = !detailsExpanded)}>
+            {detailsExpanded ? "Thu gọn" : "Xem thêm"}
+          </button>
+        </div>
+      </div>
+
+      <div class="mt-2 flex flex-wrap gap-2">
+        {#if room}
+          <button class="btn btn-soft text-sm" type="button" on:click={copyRoomLink} disabled={pairBusy || authBusy}>Copy link phòng</button>
+          {#if needsConnect}
+            <button class="btn btn-soft text-sm" type="button" on:click={reconnectCurrentRoom} disabled={pairBusy || authBusy}>
+              Kết nối lại
+            </button>
+          {/if}
+        {/if}
+        {#if !hasStartDate}
+          <button class="btn btn-soft text-sm" type="button" on:click={() => dispatch("openwizard")}>Wizard</button>
+          <button class="btn btn-soft text-sm" type="button" on:click={() => dispatch("openimport")}>Nhập JSON</button>
+        {/if}
+      </div>
+
+      {#if detailsExpanded}
+        <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div class="rounded-xl border border-white/70 bg-white/70 p-3">
+            <p class="text-xs font-semibold uppercase tracking-[.12em] text-pink-500/80">Tài khoản</p>
+            {#if me}
+              <div class="mt-2 flex items-center gap-2">
+                <div class="h-9 w-9 rounded-lg bg-white border border-white/80 flex items-center justify-center text-base shrink-0">
+                  {providerIcon(me.provider)}
+                </div>
+                <div class="min-w-0">
+                  <p class="text-sm font-semibold text-[color:var(--ink)] truncate">@{me.username}</p>
+                  <p class="text-xs text-[color:var(--ink2)]">{providerName(me.provider)}</p>
+                </div>
+              </div>
+              <div class="mt-2 flex flex-wrap gap-2">
+                <button
+                  class="btn btn-soft text-sm"
+                  type="button"
+                  on:click={() => openProviderPicker({ reason: "switch-account" })}
+                  disabled={authBusy || pairBusy || !providers.length}
+                >
+                  Đổi tài khoản
+                </button>
+              </div>
+            {:else}
+              <p class="mt-2 text-sm text-[color:var(--ink2)]">Chưa đăng nhập.</p>
+            {/if}
+          </div>
+
+          <div class="rounded-xl border border-white/70 bg-white/70 p-3">
+            <p class="text-xs font-semibold uppercase tracking-[.12em] text-pink-500/80">Phòng chung</p>
+            {#if room}
+              <p class="mt-2 text-sm text-[color:var(--ink2)]">
+                Chủ phòng: <span class="font-semibold text-[color:var(--ink)]">{room.owner?.username ? `@${room.owner.username}` : "—"}</span>
+              </p>
+              <p class="mt-1 text-sm text-[color:var(--ink2)]">
+                Người còn lại:
+                <span class="font-semibold text-[color:var(--ink)]">{room.partner?.username ? `@${room.partner.username}` : "Chưa tham gia"}</span>
+              </p>
+            {:else}
+              <p class="mt-2 text-sm text-[color:var(--ink2)]">Tạo mã hoặc nhập mã để vào phòng.</p>
+            {/if}
+          </div>
+        </div>
+      {/if}
+
+      {#if room && room.status !== "paired"}
+        <p class="mt-2 text-xs text-[color:var(--ink2)]">
+          Gửi mã <strong>{room.code}</strong> hoặc link phòng cho người kia.
+        </p>
+      {/if}
+
+      {#if infoText}
+        <p class="mt-3 rounded-xl border border-sky-200/70 bg-sky-50/80 px-3 py-2 text-sm text-sky-700">{infoText}</p>
+      {/if}
+      {#if errorText}
+        <p class="mt-3 rounded-xl border border-rose-200/80 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-600">{errorText}</p>
+      {/if}
+    </div>
+  {:else}
+  <div class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+    <div class="rounded-2xl border border-white/70 bg-white/65 p-4">
+      <div class="flex items-center justify-between gap-3">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Tài khoản</p>
           <p class="mt-1 text-sm text-[color:var(--ink2)]">
-            Chọn một cách đăng nhập để tiếp tục. Sau đó bạn có thể tạo mã ghép cặp hoặc nhập mã đã nhận.
+            {#if loading}
+              Đang kiểm tra phiên đăng nhập...
+            {:else if me}
+              @{me.username}
+            {:else}
+              Chưa đăng nhập
+            {/if}
           </p>
+        </div>
+        {#if me}
+          <div class="h-10 w-10 rounded-xl bg-white/90 border border-white/90 flex items-center justify-center text-lg shrink-0">
+            {providerIcon(me.provider)}
+          </div>
+        {/if}
+      </div>
+
+      {#if me}
+        <div class="mt-3 flex flex-wrap gap-2 text-xs">
+          <span class="pill">{providerName(me.provider)}</span>
+          <span class="pill">
+            {syncStatus === "synced"
+              ? "Đã kết nối phòng"
+              : syncStatus === "saving"
+                ? "Đang lưu"
+                : syncStatus === "error"
+                  ? "Lỗi kết nối"
+                  : syncStatus === "draft"
+                    ? "Chưa ghép phòng"
+                    : "Đang kiểm tra"}
+          </span>
+        </div>
+        <div class="mt-3 flex flex-wrap gap-2">
+          <button
+            class="btn btn-soft text-sm"
+            type="button"
+            on:click={() => openProviderPicker({ reason: "switch-account" })}
+            disabled={authBusy || pairBusy || !providers.length}
+          >
+            Đổi tài khoản
+          </button>
+          <button class="btn btn-soft text-sm" type="button" on:click={logout} disabled={authBusy || pairBusy}>
+            {authBusy ? "Đang thoát..." : "Đăng xuất"}
+          </button>
+        </div>
+      {:else}
+        <div class="mt-3 space-y-2">
+          {#if !authConfigured || !providers.length}
+            <p class="rounded-xl border border-amber-200/80 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+              Tính năng đăng nhập hiện chưa sẵn sàng.
+            </p>
+          {/if}
           {#if canShowProviderTrigger}
-            <button class="btn btn-primary mt-3 text-sm w-full sm:w-auto" type="button" on:click={() => openProviderPicker({ reason: "account-card" })}>
-              Mở danh sách đăng nhập
+            <button class="btn btn-primary text-sm w-full sm:w-auto" type="button" on:click={() => openProviderPicker({ reason: "account-card" })}>
+              Chọn cách đăng nhập
             </button>
           {/if}
         </div>
       {/if}
-
-      <div class="mt-3">
-        <p class="text-xs font-semibold uppercase tracking-[.12em] text-pink-500/80">Cách đăng nhập đang bật</p>
-        {#if !authConfigured}
-          <p class="mt-2 rounded-xl border border-amber-200/80 bg-amber-50 px-3 py-2 text-sm text-amber-700">
-            Tính năng đăng nhập chưa sẵn sàng. Vui lòng thử lại sau.
-          </p>
-        {:else if !providers.length}
-          <p class="mt-2 rounded-xl border border-amber-200/80 bg-amber-50 px-3 py-2 text-sm text-amber-700">
-            Chưa có cách đăng nhập nào được bật.
-          </p>
-        {:else}
-          <div class="mt-2 flex flex-wrap gap-2">
-            {#each providers as provider}
-              <span class="pill">
-                <span aria-hidden="true">{providerIcon(provider.id)}</span>
-                {providerName(provider.id, provider.name)}
-              </span>
-            {/each}
-          </div>
-        {/if}
-      </div>
     </div>
 
-    <div class="xl:col-span-7 rounded-2xl border border-white/70 bg-white/65 p-4">
+    <div class="rounded-2xl border border-white/70 bg-white/65 p-4">
       <div class="flex items-start justify-between gap-3">
         <div>
-          <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Phòng của hai bạn</p>
+          <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Phòng chung</p>
           <p class="mt-1 text-sm text-[color:var(--ink2)]">
             {#if room}
-              Mã hiện tại: <span class="font-bold text-[color:var(--ink)]">{room.code}</span>
+              Mã: <span class="font-bold text-[color:var(--ink)]">{room.code}</span>
               ({room.status === "paired" ? "đã đủ 2 người" : "đang chờ người kia"})
             {:else}
-              Chưa có phòng. Hãy tạo mã mới hoặc nhập mã để tham gia.
+              Tạo mã mới hoặc nhập mã để tham gia.
             {/if}
           </p>
         </div>
@@ -626,50 +789,21 @@
         {/if}
       </div>
 
-      {#if room}
-        <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div class="rounded-xl border border-white/70 bg-white/70 px-3 py-3">
-            <p class="text-xs font-semibold uppercase tracking-[.12em] text-pink-500/80">Chủ phòng</p>
-            <p class="mt-1 text-sm font-semibold text-[color:var(--ink)]">{room.owner?.username ? `@${room.owner.username}` : "—"}</p>
-          </div>
-          <div class="rounded-xl border border-white/70 bg-white/70 px-3 py-3">
-            <p class="text-xs font-semibold uppercase tracking-[.12em] text-pink-500/80">Người còn lại</p>
-            <p class="mt-1 text-sm font-semibold text-[color:var(--ink)]">{room.partner?.username ? `@${room.partner.username}` : "Chưa tham gia"}</p>
-          </div>
-        </div>
+      <div class="mt-4">
+        <label for="join_code" class="label">Mã ghép cặp (6 ký tự)</label>
+        <input
+          id="join_code"
+          class="field mt-1 text-sm uppercase tracking-[.2em] text-center"
+          type="text"
+          placeholder="ABC123"
+          maxlength="6"
+          bind:value={joinCode}
+          on:input={(e) => (joinCode = normalizeCode(e.currentTarget.value))}
+          disabled={pairBusy || authBusy}
+        />
+      </div>
 
-        <div class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          <button class="btn btn-soft text-sm w-full" type="button" on:click={copyRoomLink} disabled={pairBusy || authBusy}>Copy link phòng</button>
-          {#if needsConnect}
-            <button class="btn btn-primary text-sm w-full" type="button" on:click={reconnectCurrentRoom} disabled={pairBusy || authBusy}>
-              Kết nối lại phòng
-            </button>
-          {/if}
-          {#if !hasStartDate}
-            <button class="btn btn-soft text-sm w-full" type="button" on:click={() => dispatch("openwizard")}>
-              Mở Wizard
-            </button>
-            <button class="btn btn-soft text-sm w-full sm:col-span-2 lg:col-span-1" type="button" on:click={() => dispatch("openimport")}>
-              Nhập JSON
-            </button>
-          {/if}
-        </div>
-      {/if}
-
-      <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div class="sm:col-span-2">
-          <label for="join_code" class="label">Nhập mã ghép cặp (6 ký tự)</label>
-          <input
-            id="join_code"
-            class="field mt-1 text-sm uppercase tracking-[.2em] text-center"
-            type="text"
-            placeholder="ABC123"
-            maxlength="6"
-            bind:value={joinCode}
-            on:input={(e) => (joinCode = normalizeCode(e.currentTarget.value))}
-            disabled={pairBusy || authBusy}
-          />
-        </div>
+      <div class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
         <button class="btn btn-soft text-sm w-full" type="button" on:click={joinPairCode} disabled={pairBusy || authBusy || !me}>
           {pairBusy ? "Đang xử lý..." : "Tham gia bằng mã"}
         </button>
@@ -678,15 +812,35 @@
         </button>
       </div>
 
-      {#if !hasStartDate}
-        <p class="mt-2 text-xs text-[color:var(--ink2)]">
-          Sau khi ghép phòng, bạn có thể bắt đầu bằng Wizard hoặc dùng file sao lưu JSON.
-        </p>
+      {#if room}
+        <div class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <div class="rounded-xl border border-white/70 bg-white/70 px-3 py-2.5">
+            <p class="text-[11px] uppercase tracking-[.12em] text-[color:var(--ink2)]">Chủ phòng</p>
+            <p class="mt-1 text-sm font-semibold text-[color:var(--ink)] truncate">{room.owner?.username ? `@${room.owner.username}` : "—"}</p>
+          </div>
+          <div class="rounded-xl border border-white/70 bg-white/70 px-3 py-2.5">
+            <p class="text-[11px] uppercase tracking-[.12em] text-[color:var(--ink2)]">Người còn lại</p>
+            <p class="mt-1 text-sm font-semibold text-[color:var(--ink)] truncate">{room.partner?.username ? `@${room.partner.username}` : "Chưa tham gia"}</p>
+          </div>
+        </div>
+
+        <div class="mt-3 flex flex-wrap gap-2">
+          <button class="btn btn-soft text-sm" type="button" on:click={copyRoomLink} disabled={pairBusy || authBusy}>Copy link phòng</button>
+          {#if needsConnect}
+            <button class="btn btn-soft text-sm" type="button" on:click={reconnectCurrentRoom} disabled={pairBusy || authBusy}>
+              Kết nối lại
+            </button>
+          {/if}
+          {#if !hasStartDate}
+            <button class="btn btn-soft text-sm" type="button" on:click={() => dispatch("openwizard")}>Wizard</button>
+            <button class="btn btn-soft text-sm" type="button" on:click={() => dispatch("openimport")}>Nhập JSON</button>
+          {/if}
+        </div>
       {/if}
 
       {#if room && room.status !== "paired"}
         <p class="mt-2 text-xs text-[color:var(--ink2)]">
-          Gửi mã <strong>{room.code}</strong> hoặc link phòng cho người kia để ghép cặp.
+          Gửi mã <strong>{room.code}</strong> hoặc link phòng cho người kia.
         </p>
       {/if}
 
@@ -698,7 +852,11 @@
       {/if}
     </div>
   </div>
+  {/if}
 </section>
+    </div>
+  </div>
+</div>
 
 <div class={`modal ${providerPickerOpen ? "open" : ""}`} aria-hidden={!providerPickerOpen} on:click|self={closeProviderPicker}>
   <div

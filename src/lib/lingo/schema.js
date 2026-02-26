@@ -46,7 +46,9 @@ export function createDefaultState() {
     celebrations: {
       shownMilestoneIds: [],
     },
-    ui: {},
+    ui: {
+      authPanelMode: "ultra_minimal", // ultra_minimal | standard
+    },
   };
 }
 
@@ -87,6 +89,10 @@ export function migrateState(rawInput) {
   const settings = asObject(raw.settings);
   const couple = asObject(raw.couple);
   const celebrations = asObject(raw.celebrations);
+  const ui = asObject(raw.ui);
+  const authPanelMode = ["ultra_minimal", "standard"].includes(ui.authPanelMode)
+    ? ui.authPanelMode
+    : "ultra_minimal";
 
   return {
     ...raw,
@@ -109,7 +115,9 @@ export function migrateState(rawInput) {
         ? celebrations.shownMilestoneIds.filter((v) => typeof v === "string")
         : [],
     },
-    ui: asObject(raw.ui),
+    ui: {
+      ...ui,
+      authPanelMode,
+    },
   };
 }
-

@@ -1,4 +1,4 @@
-<script>
+﻿<script>
   import { onDestroy, onMount, tick } from "svelte";
   import TimerSection from "./lib/components/TimerSection.svelte";
   import NextMilestoneSection from "./lib/components/NextMilestoneSection.svelte";
@@ -25,6 +25,7 @@
   let settingsOpen = false;
   let wizardOpen = false;
   let wizardRequired = false;
+  let pairingOpen = false;
   let toastOpen = false;
   let toastMessage = "";
   let toastTimer;
@@ -35,6 +36,7 @@
   let currentPath = "/";
   let removePopstateListener = () => {};
   let lastAutoPromptRoomId = "";
+  let pairingAutoPrompted = false;
 
   function showToast(message, ms = 2200) {
     toastMessage = message;
@@ -49,12 +51,22 @@
     settingsOpen = true;
   }
 
+  function openPairing() {
+    pairingOpen = true;
+  }
+
+  function closePairing() {
+    pairingOpen = false;
+  }
+
   function openImportFlow() {
+    pairingOpen = false;
     settingsOpen = true;
     showToast("Mở Cài đặt để nhập bản sao lưu JSON.");
   }
 
   function openWizard(forceRequired = false) {
+    pairingOpen = false;
     wizardRequired = forceRequired || !($lingoState?.settings?.startDate || "").trim();
     wizardOpen = true;
   }
@@ -161,6 +173,7 @@
   $: canPromptWizard = syncReady && syncStatus !== "error";
   $: canShowMainContent = hasRoom;
   $: showSetupChoice = hasRoom && !hasStartDate;
+  $: authPanelMode = $lingoState?.ui?.authPanelMode === "standard" ? "standard" : "ultra_minimal";
 
   $: celebrationStart = parseDateTime($lingoState?.settings?.startDate || "");
   $: celebrationView = buildMilestoneView(celebrationStart, new Date($lingoNow));
@@ -170,6 +183,16 @@
 
   $: if (!hasRoom) {
     lastAutoPromptRoomId = "";
+  }
+
+  $: if (hasRoom) {
+    pairingAutoPrompted = false;
+  }
+
+  $: if (!hasRoom && canPromptWizard && !pairingAutoPrompted && !pairingOpen && !wizardOpen && !settingsOpen) {
+    pairingAutoPrompted = true;
+    pairingOpen = true;
+    showToast("Mở kết nối cặp đôi để tạo hoặc tham gia phòng chung.");
   }
 
   $: if (hasRoom && canPromptWizard && !hasStartDate && roomId !== lastAutoPromptRoomId) {
@@ -235,23 +258,19 @@
             </div>
           </div>
           <div class="flex flex-wrap gap-2">
+            <button
+              class={`btn text-sm ${hasRoom ? "btn-soft" : "btn-primary"}`}
+              type="button"
+              on:click={openPairing}
+            >
+              {hasRoom ? `Phòng ${roomId}` : "Kết nối cặp đôi"}
+            </button>
             <button class="btn btn-soft text-sm" type="button" on:click={openSettings}>Cài đặt</button>
             <button class="btn btn-primary text-sm" type="button" on:click={() => openWizard(false)}>Wizard nhanh</button>
           </div>
         </div>
       </header>
 
-      <AuthPairingPanel
-        bind:this={authPairingPanelRef}
-        currentRoomId={roomId}
-        syncStatus={syncStatus}
-        hasStartDate={hasStartDate}
-        on:toast={(e) => showToast(e.detail)}
-        on:openwizard={() => openWizard(!hasStartDate)}
-        on:openimport={openImportFlow}
-        on:refreshroom={(e) => reconnectRoom("", { clearRoomQuery: !!e.detail?.clearRoomQuery })}
-        on:roomconnect={(e) => reconnectRoom(e.detail?.roomId || e.detail?.code || "")}
-      />
 
       {#if showSetupChoice}
         <section class="card rounded-3xl p-4 sm:p-5">
@@ -305,6 +324,24 @@
       </footer>
     </div>
   </main>
+
+  <AuthPairingPanel
+    bind:this={authPairingPanelRef}
+    open={pairingOpen}
+    currentRoomId={roomId}
+    syncStatus={syncStatus}
+    hasStartDate={hasStartDate}
+    ultraMinimal={authPanelMode === "ultra_minimal"}
+    on:close={closePairing}
+    on:toast={(e) => showToast(e.detail)}
+    on:openwizard={() => openWizard(!hasStartDate)}
+    on:openimport={openImportFlow}
+    on:refreshroom={(e) => reconnectRoom("", { clearRoomQuery: !!e.detail?.clearRoomQuery })}
+    on:roomconnect={(e) => {
+      closePairing();
+      reconnectRoom(e.detail?.roomId || e.detail?.code || "");
+    }}
+  />
 
   <SettingsModal
     open={settingsOpen}
