@@ -92,6 +92,13 @@
     currentPath = window.location.pathname || "/";
   }
 
+  function stripEmptyHash() {
+    if (typeof window === "undefined") return;
+    if (window.location.hash !== "#") return;
+    const cleanPath = `${window.location.pathname || "/"}${window.location.search || ""}`;
+    history.replaceState({}, "", cleanPath);
+  }
+
   async function reconnectRoom(roomId = "", options = {}) {
     try {
       if (typeof window !== "undefined") {
@@ -105,6 +112,7 @@
           url.searchParams.delete("code");
         }
         history.replaceState({}, "", url);
+        stripEmptyHash();
       }
 
       destroyLingoSharedStateBridge();
@@ -140,6 +148,7 @@
   }
 
   onMount(() => {
+    stripEmptyHash();
     updateCurrentPath();
 
     if (typeof window !== "undefined") {
