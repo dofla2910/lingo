@@ -253,84 +253,89 @@
   <main id="mainContent" tabindex="-1" class="relative z-10 px-4 py-4 sm:px-6 lg:px-8">
     <div class="mx-auto max-w-6xl space-y-4">
       <header class="card rounded-3xl p-4 sm:p-5">
-        <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div class="flex items-start gap-4">
-            <div class="h-14 w-14 rounded-2xl flex items-center justify-center bg-white/70 border border-white/80 shadow-sm shadow-pink-200/40">
-              <span class="text-2xl" aria-hidden="true">🦩</span>
-            </div>
-            <div>
-              <p class="text-xs font-semibold uppercase tracking-[.18em] text-pink-500/80">Lingo</p>
-              <h1 class="text-xl sm:text-2xl font-extrabold text-[color:var(--ink)]">Bộ đếm ngày yêu Hồng Hạc</h1>
-              <p class="text-sm text-[color:var(--ink2)]">
-                Tình yêu bền vững như loài Hạc (chung thủy trọn đời) và rực rỡ như hoa Tulip (tình yêu hoàn hảo).
-              </p>
-            </div>
+        <div class="flex min-w-0 items-start gap-4">
+          <div class="h-14 w-14 rounded-2xl flex items-center justify-center bg-white/70 border border-white/80 shadow-sm shadow-pink-200/40">
+            <span class="text-2xl" aria-hidden="true">🦩</span>
           </div>
-          <div class="flex flex-wrap gap-2">
-            <button
-              class={`btn text-sm ${hasRoom ? "btn-soft" : "btn-primary"}`}
-              type="button"
-              on:click={openPairing}
-            >
-              {hasRoom ? `Phòng ${roomId}` : "Kết nối cặp đôi"}
-            </button>
-            <button class="btn btn-soft text-sm" type="button" on:click={openSettings}>Cài đặt</button>
-            <button class="btn btn-primary text-sm" type="button" on:click={() => openWizard(false)}>Wizard nhanh</button>
+          <div class="min-w-0">
+            <p class="text-xs font-semibold uppercase tracking-[.18em] text-pink-500/80">Lingo</p>
+            <h1 class="text-xl sm:text-2xl font-extrabold leading-tight text-[color:var(--ink)]">Bộ đếm ngày yêu Hồng Hạc</h1>
+            <p class="mt-1 text-sm text-[color:var(--ink2)]">
+              Tình yêu bền vững như loài Hạc (chung thủy trọn đời) và rực rỡ như hoa Tulip (tình yêu hoàn hảo).
+            </p>
           </div>
         </div>
       </header>
-
-
-      {#if showSetupChoice}
-        <section class="card rounded-3xl p-4 sm:p-5">
-          <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Bắt đầu thiết lập</p>
-              <h2 class="text-lg sm:text-xl font-bold text-[color:var(--ink)]">Wizard hoặc nhập bản sao lưu</h2>
-              <p class="text-sm text-[color:var(--ink2)]">
-                Bạn có thể nhập nhanh bằng Wizard hoặc khôi phục dữ liệu cũ bằng file JSON.
-              </p>
+      <div class="pinterest-board">
+        {#if showSetupChoice}
+          <section class="pinterest-tile card rounded-3xl p-4 sm:p-5">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Bắt đầu thiết lập</p>
+                <h2 class="text-lg sm:text-xl font-bold text-[color:var(--ink)]">Wizard hoặc nhập bản sao lưu</h2>
+                <p class="text-sm text-[color:var(--ink2)]">
+                  Bạn có thể nhập nhanh bằng Wizard hoặc khôi phục dữ liệu cũ bằng file JSON.
+                </p>
+              </div>
+              <div class="grid grid-cols-1 gap-2 w-full sm:w-auto sm:min-w-[260px]">
+                <button class="btn btn-primary text-sm w-full" type="button" on:click={() => openWizard(true)}>Mở Wizard</button>
+                <button class="btn btn-soft text-sm w-full" type="button" on:click={openImportFlow}>Nhập JSON</button>
+              </div>
             </div>
-            <div class="grid grid-cols-1 gap-2 w-full sm:w-auto sm:min-w-[260px]">
-              <button class="btn btn-primary text-sm w-full" type="button" on:click={() => openWizard(true)}>Mở Wizard</button>
-              <button class="btn btn-soft text-sm w-full" type="button" on:click={openImportFlow}>Nhập JSON</button>
-            </div>
-          </div>
-        </section>
-      {/if}
+          </section>
+        {/if}
 
-      {#if canShowMainContent}
-        <div class="grid grid-cols-1 gap-4 lg:grid-cols-12">
-          <div class="lg:col-span-8">
+        {#if canShowMainContent}
+          <div class="pinterest-tile">
             <TimerSection state={$lingoState} now={$lingoNow} />
           </div>
-          <div class="lg:col-span-4">
+
+          <div class="pinterest-tile">
             <NextMilestoneSection state={$lingoState} now={$lingoNow} />
           </div>
-        </div>
 
-        <ProfilesSection state={$lingoState} now={$lingoNow} on:quickedit={openSettings} />
+          <div class="pinterest-tile">
+            <ProfilesSection state={$lingoState} now={$lingoNow} on:quickedit={openSettings} />
+          </div>
 
-        <div class="grid grid-cols-1 gap-4 lg:grid-cols-12">
-          <div class="lg:col-span-7">
+          <div class="pinterest-tile">
             <MilestonesSection state={$lingoState} now={$lingoNow} />
           </div>
-          <div class="lg:col-span-5">
-            <EventsSection state={$lingoState} now={$lingoNow} actions={lingoActions} />
-          </div>
-        </div>
-      {/if}
 
-      <footer class="card rounded-2xl p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div class="text-sm text-[color:var(--ink2)]">
-          <p class="font-semibold text-[color:var(--ink)]">Riêng tư & cài đặt</p>
-          <p>Dữ liệu được lưu trong phòng chung của hai bạn và đồng bộ giữa các thiết bị đã ghép cặp.</p>
-        </div>
-        <div class="flex gap-2">
-          <button class="btn btn-soft text-sm" type="button" on:click={openSettings}>Mở cài đặt</button>
-          <button class="btn btn-primary text-sm" type="button" on:click={() => openWizard(false)}>Wizard nhanh</button>
-        </div>
-      </footer>
+          <div class="pinterest-tile space-y-4">
+            <section class="card rounded-3xl p-3 sm:p-4" aria-label="Tác vụ nhanh">
+              <div class="grid grid-cols-1 gap-2 sm:grid-cols-3 lg:grid-cols-1">
+                <button
+                  class={`btn text-sm w-full ${hasRoom ? "btn-soft" : "btn-primary"}`}
+                  type="button"
+                  on:click={openPairing}
+                >
+                  {hasRoom ? `Phòng ${roomId}` : "Kết nối cặp đôi"}
+                </button>
+                <button class="btn btn-soft text-sm w-full" type="button" on:click={openSettings}>Cài đặt</button>
+                <button class="btn btn-primary text-sm w-full" type="button" on:click={() => openWizard(false)}>Wizard nhanh</button>
+              </div>
+            </section>
+
+            <EventsSection
+              state={$lingoState}
+              now={$lingoNow}
+              actions={lingoActions}
+            />
+          </div>
+        {/if}
+
+        <footer class="pinterest-tile card rounded-2xl p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div class="text-sm text-[color:var(--ink2)]">
+            <p class="font-semibold text-[color:var(--ink)]">Riêng tư & cài đặt</p>
+            <p>Dữ liệu được lưu trong phòng chung của hai bạn và đồng bộ giữa các thiết bị đã ghép cặp.</p>
+          </div>
+          <div class="flex gap-2">
+            <button class="btn btn-soft text-sm" type="button" on:click={openSettings}>Mở cài đặt</button>
+            <button class="btn btn-primary text-sm" type="button" on:click={() => openWizard(false)}>Wizard nhanh</button>
+          </div>
+        </footer>
+      </div>
     </div>
   </main>
 
@@ -389,3 +394,25 @@
 {/if}
 
 <ToastMessage message={toastMessage} open={toastOpen} />
+
+<style>
+  .pinterest-board {
+    position: relative;
+  }
+
+  .pinterest-tile {
+    display: block;
+    margin-bottom: 1rem;
+    break-inside: avoid;
+    -webkit-column-break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  @media (min-width: 1024px) {
+    .pinterest-board {
+      column-count: 2;
+      column-gap: 1rem;
+      column-fill: balance;
+    }
+  }
+</style>

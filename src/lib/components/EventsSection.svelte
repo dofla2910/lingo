@@ -1,4 +1,5 @@
 <script>
+  import { createEventDispatcher } from "svelte";
   import {
     EVENT_CATEGORY_LABELS,
     formatDate,
@@ -12,6 +13,11 @@
   export let state;
   export let now = Date.now();
   export let actions;
+  export let showQuickActions = false;
+  export let pairActionLabel = "Kết nối cặp đôi";
+  export let pairActionConnected = false;
+
+  const dispatch = createEventDispatcher();
 
   let editingId = "";
   let title = "";
@@ -94,6 +100,20 @@
     <h2 class="text-lg sm:text-xl font-bold text-[color:var(--ink)]">Quản lý ngày quan trọng</h2>
     <p class="text-sm text-[color:var(--ink2)]">CRUD + sắp xếp ngày gần nhất + highlight hôm nay.</p>
   </div>
+
+  {#if showQuickActions}
+    <div class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+      <button
+        class={`btn text-sm w-full ${pairActionConnected ? "btn-soft" : "btn-primary"}`}
+        type="button"
+        on:click={() => dispatch("openpairing")}
+      >
+        {pairActionLabel}
+      </button>
+      <button class="btn btn-soft text-sm w-full" type="button" on:click={() => dispatch("opensettings")}>Cài đặt</button>
+      <button class="btn btn-primary text-sm w-full" type="button" on:click={() => dispatch("openwizard")}>Wizard nhanh</button>
+    </div>
+  {/if}
 
   <form class="mt-4 space-y-3 rounded-2xl border border-white/70 bg-white/65 p-4" on:submit|preventDefault={submitForm}>
     <div>
