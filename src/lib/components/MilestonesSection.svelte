@@ -57,7 +57,7 @@
     </div>
 
     <div class="xl:col-span-8">
-      <p class="text-sm text-[color:var(--ink2)]">Badge sáng khi đạt cột mốc. Trạng thái được đọc trực tiếp từ Firebase Realtime Database.</p>
+      <p class="text-sm text-[color:var(--ink2)]">Badge sáng khi đạt cột mốc. Trạng thái được đọc trực tiếp từ Supabase Realtime.</p>
       <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
         {#each milestoneView.items as item}
           <article

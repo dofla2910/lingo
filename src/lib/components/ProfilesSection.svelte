@@ -45,7 +45,7 @@
     <div>
       <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Svelte • Cặp đôi</p>
       <h2 class="text-lg sm:text-xl font-bold text-[color:var(--ink)]">Hồ sơ tình yêu của hai bạn</h2>
-      <p class="text-sm text-[color:var(--ink2)]">Dữ liệu hồ sơ được đọc trực tiếp từ Firebase Realtime Database.</p>
+      <p class="text-sm text-[color:var(--ink2)]">Dữ liệu hồ sơ được đọc trực tiếp từ Supabase (PostgreSQL + Realtime).</p>
     </div>
   </div>
 

@@ -1,8 +1,23 @@
 <script>
-  import { createEventDispatcher, onMount } from "svelte";
+  import { createEventDispatcher, onDestroy, onMount } from "svelte";
+  import {
+    createPairRoom,
+    getCurrentAuthUser,
+    getEnabledAuthProviders,
+    getMyPairRoom,
+    getSupabaseClient,
+    getSupabaseConfigError,
+    isSchemaMissingError,
+    isSupabaseConfigured,
+    joinPairRoom,
+    mapRoomRowToDto,
+    sanitizeRoomCode,
+    signInWithProvider,
+    signOutAuth,
+  } from "../lingo/supabaseClient.js";
 
   export let currentRoomId = "";
-  export let firebaseStatus = "connecting";
+  export let syncStatus = "connecting";
   export let hasStartDate = false;
 
   const dispatch = createEventDispatcher();
@@ -21,6 +36,7 @@
   let providerPickerReason = "";
   let pendingAutoPairAfterAuth = false;
   let autoPairRequestedFromQuery = false;
+  let authSubscription = null;
 
   function emitToast(message) {
     if (!message) return;
@@ -28,10 +44,7 @@
   }
 
   function normalizeCode(value) {
-    return String(value || "")
-      .toUpperCase()
-      .replace(/[^A-Z0-9]/g, "")
-      .slice(0, 6);
+    return sanitizeRoomCode(value);
   }
 
   function providerIcon(id) {
@@ -40,6 +53,8 @@
     if (k === "facebook") return "📘";
     if (k === "google") return "🔎";
     if (k === "github") return "🐙";
+    if (k === "discord") return "🎮";
+    if (k === "apple") return "🍎";
     return "🔐";
   }
 
@@ -50,15 +65,19 @@
     if (k === "facebook") return "Facebook";
     if (k === "google") return "Google";
     if (k === "github") return "GitHub";
+    if (k === "discord") return "Discord";
+    if (k === "apple") return "Apple";
     return id || "OAuth";
   }
 
   function providerHint(id) {
     const k = String(id || "").toLowerCase();
-    if (k === "instagram") return "Phù hợp nếu cả hai thường dùng Instagram. Có thể bị giới hạn theo cấu hình Meta.";
-    if (k === "facebook") return "Ổn định cho đa số người dùng, dễ cấu hình app trên Meta Developers.";
-    if (k === "google") return "Đăng nhập nhanh, ít lỗi callback nếu cấu hình đúng redirect URI.";
+    if (k === "instagram") return "Phù hợp nếu cả hai thường dùng Instagram. Tùy cấu hình Supabase/Auth provider.";
+    if (k === "facebook") return "Dễ dùng cho đa số người dùng, thuận tiện chia sẻ mã ghép cặp.";
+    if (k === "google") return "Đăng nhập nhanh, thường ổn định với callback URL.";
     if (k === "github") return "Tiện cho tài khoản kỹ thuật / dev.";
+    if (k === "discord") return "Nhanh cho cặp đôi dùng Discord.";
+    if (k === "apple") return "Phù hợp hệ sinh thái Apple, cần cấu hình provider trước.";
     return "Đăng nhập OAuth để tạo hoặc tham gia phòng cặp đôi.";
   }
 
@@ -68,59 +87,74 @@
     if (k === "facebook") return "from-blue-400/25 to-sky-300/25";
     if (k === "google") return "from-emerald-300/20 to-rose-300/20";
     if (k === "github") return "from-slate-400/20 to-zinc-300/20";
+    if (k === "discord") return "from-indigo-400/25 to-violet-300/25";
+    if (k === "apple") return "from-zinc-300/20 to-slate-300/20";
     return "from-pink-300/20 to-rose-200/20";
   }
 
   function toErrorMessage(err, fallback = "Không thể thực hiện thao tác.") {
-    if (!err) return fallback;
-    if (typeof err === "string") return err;
-    return String(err?.message || fallback);
+    const msg = String(err?.message || err || fallback);
+    const lower = msg.toLowerCase();
+
+    if (isSchemaMissingError?.(err)) {
+      return "Thiếu bảng/hàm Supabase cho Lingo. Hãy chạy file supabase/lingo_schema.sql.";
+    }
+    if (msg.includes("UNAUTHENTICATED")) return "Vui lòng đăng nhập trước.";
+    if (msg.includes("INVALID_CODE")) return "Mã ghép cặp không hợp lệ (cần đúng 6 ký tự).";
+    if (msg.includes("CODE_NOT_FOUND_OR_EXPIRED")) return "Mã không tồn tại hoặc đã hết hạn.";
+    if (msg.includes("ROOM_ALREADY_HAS_2_PEOPLE")) return "Phòng này đã đủ 2 người.";
+    if (lower.includes("row-level security") || lower.includes("permission denied")) {
+      return "Supabase từ chối truy cập (RLS). Hãy kiểm tra policy hoặc đăng nhập lại.";
+    }
+    if (lower.includes("failed to fetch") || lower.includes("network")) {
+      return "Không thể kết nối Supabase. Hãy kiểm tra mạng.";
+    }
+    if (lower.includes("supabase chưa cấu hình") || lower.includes("vite_supabase_")) {
+      return msg;
+    }
+    return msg || fallback;
   }
 
-  async function fetchJson(path, options = {}) {
-    const res = await fetch(path, {
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        ...(options.headers || {}),
-      },
-      ...options,
-    });
-
-    let data = null;
-    try {
-      data = await res.json();
-    } catch {
-      data = null;
-    }
-
-    if (!res.ok || data?.ok === false) {
-      const serverMsg = data?.message || data?.error || `${res.status} ${res.statusText}`;
-      const err = new Error(String(serverMsg || "Request failed"));
-      err.status = res.status;
-      err.code = data?.error || "";
-      err.payload = data;
-      throw err;
-    }
-
-    return data;
+  function clearMessages() {
+    errorText = "";
+    infoText = "";
   }
 
   async function refreshAuthPairState() {
     loading = true;
     errorText = "";
-    infoText = "";
+
+    providers = getEnabledAuthProviders();
+    authConfigured = isSupabaseConfigured();
+    const cfgErr = getSupabaseConfigError();
+    if (cfgErr) {
+      me = null;
+      room = null;
+      if (!joinCode && currentRoomId) joinCode = normalizeCode(currentRoomId);
+      errorText = `Supabase chưa cấu hình: ${cfgErr}`;
+      loading = false;
+      return;
+    }
+
     try {
-      const [providerData, authData, pairData] = await Promise.all([
-        fetchJson("/api/auth/providers", { method: "GET" }),
-        fetchJson("/api/auth/me", { method: "GET" }),
-        fetchJson("/api/pair/me", { method: "GET" }),
-      ]);
-      providers = Array.isArray(providerData?.providers) ? providerData.providers : [];
-      authConfigured = !!providerData?.authConfigured;
-      me = authData?.user || null;
-      room = pairData?.room || null;
-      if (room?.code) joinCode = String(room.code).toUpperCase();
+      const client = getSupabaseClient();
+      me = await getCurrentAuthUser(client);
+
+      if (me) {
+        const roomRow = await getMyPairRoom(client).catch((err) => {
+          if (String(err?.message || "").includes("0 rows")) return null;
+          throw err;
+        });
+        room = mapRoomRowToDto(roomRow, me.id);
+      } else {
+        room = null;
+      }
+
+      if (room?.code) {
+        joinCode = String(room.code).toUpperCase();
+      } else if (!joinCode && currentRoomId) {
+        joinCode = normalizeCode(currentRoomId);
+      }
     } catch (err) {
       errorText = toErrorMessage(err, "Không thể tải trạng thái đăng nhập.");
     } finally {
@@ -129,12 +163,13 @@
   }
 
   function openProviderPicker(options = {}) {
-    if (!authConfigured) {
-      errorText = "Backend chưa cấu hình Auth.js (thiếu AUTH_SECRET).";
+    const cfgErr = getSupabaseConfigError();
+    if (cfgErr) {
+      errorText = `Supabase chưa cấu hình: ${cfgErr}`;
       return;
     }
     if (!providers.length) {
-      errorText = "Server chưa bật provider đăng nhập nào.";
+      errorText = "Chưa bật provider đăng nhập nào. Hãy cấu hình VITE_SUPABASE_PROVIDERS.";
       return;
     }
     providerPickerReason = String(options.reason || "");
@@ -177,6 +212,7 @@
       url.searchParams.delete("auth");
       changed = true;
     }
+
     if (authErr) {
       errorText = `Đăng nhập lỗi: ${authErr}`;
       url.searchParams.delete("auth_error");
@@ -184,12 +220,10 @@
       changed = true;
     }
 
-    if (changed) {
-      history.replaceState({}, "", url);
-    }
+    if (changed) history.replaceState({}, "", url);
   }
 
-  function buildAuthCallbackUrl() {
+  function buildAuthRedirectUrl() {
     const callbackUrl = new URL(window.location.href);
     callbackUrl.searchParams.set("auth", "oauth_ok");
     if (pendingAutoPairAfterAuth) {
@@ -198,30 +232,46 @@
     return callbackUrl.toString();
   }
 
-  function startAuthLogin(providerId) {
-    if (typeof window === "undefined") return;
+  async function startAuthLogin(providerId) {
     const pid = String(providerId || "").trim();
     if (!pid) return;
 
     authBusy = true;
-    providerPickerOpen = false;
-    const callbackUrl = buildAuthCallbackUrl();
-    window.location.href = `/api/auth/start/${encodeURIComponent(pid)}?callbackUrl=${encodeURIComponent(callbackUrl)}`;
+    errorText = "";
+
+    try {
+      const client = getSupabaseClient();
+      const redirectTo = buildAuthRedirectUrl();
+      const data = await signInWithProvider(pid, { redirectTo }, client);
+      providerPickerOpen = false;
+
+      if (data?.url && typeof window !== "undefined") {
+        window.location.assign(data.url);
+        return;
+      }
+
+      authBusy = false;
+      infoText = "Đã gửi yêu cầu đăng nhập. Nếu chưa chuyển trang, hãy kiểm tra cấu hình provider.";
+    } catch (err) {
+      authBusy = false;
+      errorText = toErrorMessage(err, "Không thể bắt đầu đăng nhập.");
+    }
   }
 
   async function logout() {
     authBusy = true;
-    errorText = "";
-    infoText = "";
+    clearMessages();
     try {
-      await fetchJson("/auth/logout", { method: "POST", body: "{}" });
+      const client = getSupabaseClient();
+      await signOutAuth(client);
       me = null;
       room = null;
       joinCode = "";
       pendingAutoPairAfterAuth = false;
+      autoPairRequestedFromQuery = false;
       infoText = "Đã đăng xuất.";
       emitToast("Đã đăng xuất.");
-      dispatch("refreshfirebase");
+      dispatch("refreshroom", { clearRoomQuery: true });
     } catch (err) {
       errorText = toErrorMessage(err, "Không thể đăng xuất.");
     } finally {
@@ -254,31 +304,30 @@
     if (!options.keepInfo) infoText = "";
 
     try {
-      const data = await fetchJson("/api/pair/create", {
-        method: "POST",
-        body: JSON.stringify({
-          wizardCompletedAt: new Date().toISOString(),
-        }),
-      });
-      room = data?.room || null;
-      if (room?.code) {
-        joinCode = String(room.code).toUpperCase();
-        providerPickerOpen = false;
-        pendingAutoPairAfterAuth = false;
-        autoPairRequestedFromQuery = false;
-        if (options.auto) {
-          infoText = `Mã ghép cặp đã sẵn sàng: ${joinCode}. Gửi cho người kia để tham gia.`;
-        }
-        emitToast(data?.reused ? `Dùng lại mã phòng: ${joinCode}` : `Đã tạo mã ghép cặp: ${joinCode}`);
-        dispatch("roomconnect", {
-          roomId: room.roomId || room.code,
-          code: room.code,
-          room,
-          source: data?.reused ? "reuse" : "create",
-        });
-        return data;
+      const client = getSupabaseClient();
+      const row = await createPairRoom(me, client);
+      const nextRoom = mapRoomRowToDto(row, me.id);
+      if (!nextRoom?.code) throw new Error("Không nhận được mã ghép cặp từ Supabase.");
+
+      const reused = !!room?.code && room.code === nextRoom.code;
+      room = nextRoom;
+      joinCode = String(nextRoom.code).toUpperCase();
+      providerPickerOpen = false;
+      pendingAutoPairAfterAuth = false;
+      autoPairRequestedFromQuery = false;
+
+      if (options.auto) {
+        infoText = `Mã ghép cặp đã sẵn sàng: ${joinCode}. Gửi cho người kia để tham gia.`;
       }
-      throw new Error("Không nhận được mã ghép cặp từ server.");
+
+      emitToast(reused ? `Dùng lại mã phòng: ${joinCode}` : `Đã tạo mã ghép cặp: ${joinCode}`);
+      dispatch("roomconnect", {
+        roomId: nextRoom.code,
+        code: nextRoom.code,
+        room: nextRoom,
+        source: reused ? "reuse" : "create",
+      });
+      return nextRoom;
     } catch (err) {
       errorText = toErrorMessage(err, "Không thể tạo mã ghép cặp.");
       return null;
@@ -290,6 +339,7 @@
   async function joinPairCode() {
     const code = normalizeCode(joinCode);
     joinCode = code;
+
     if (code.length !== 6) {
       errorText = "Mã ghép cặp phải gồm 6 ký tự.";
       return;
@@ -300,33 +350,32 @@
     }
 
     pairBusy = true;
-    errorText = "";
-    infoText = "";
+    clearMessages();
+
     try {
-      const data = await fetchJson("/api/pair/join", {
-        method: "POST",
-        body: JSON.stringify({ code }),
-      });
-      room = data?.room || null;
+      const client = getSupabaseClient();
+      const row = await joinPairRoom(code, me, client);
+      const nextRoom = mapRoomRowToDto(row, me.id);
+      if (!nextRoom) throw new Error("Không thể nhận thông tin phòng sau khi ghép cặp.");
+
+      room = nextRoom;
       pendingAutoPairAfterAuth = false;
       autoPairRequestedFromQuery = false;
-      emitToast(`Đã ghép cặp vào phòng ${code}.`);
+
+      if (nextRoom.isOwner) {
+        infoText = `Bạn đang dùng chính mã phòng ${code}. Hãy gửi mã này cho người kia.`;
+      } else {
+        emitToast(`Đã ghép cặp vào phòng ${code}.`);
+      }
+
       dispatch("roomconnect", {
-        roomId: room?.roomId || room?.code || code,
-        code,
-        room,
-        source: "join",
+        roomId: nextRoom.code,
+        code: nextRoom.code,
+        room: nextRoom,
+        source: nextRoom.isOwner ? "self-room" : "join",
       });
     } catch (err) {
-      if (err?.code === "CANNOT_JOIN_OWN_CODE") {
-        errorText = "Bạn đang nhập chính mã của mình. Hãy gửi mã này cho người kia.";
-      } else if (err?.code === "ROOM_ALREADY_HAS_2_PEOPLE") {
-        errorText = "Phòng này đã đủ 2 người.";
-      } else if (err?.code === "CODE_NOT_FOUND_OR_EXPIRED") {
-        errorText = "Mã không tồn tại hoặc đã hết hạn.";
-      } else {
-        errorText = toErrorMessage(err, "Không thể ghép cặp.");
-      }
+      errorText = toErrorMessage(err, "Không thể ghép cặp.");
     } finally {
       pairBusy = false;
     }
@@ -335,6 +384,7 @@
   async function copyRoomLink() {
     const code = room?.code || "";
     if (!code || typeof window === "undefined") return;
+
     const url = new URL(window.location.href);
     url.searchParams.set("room", code);
     url.searchParams.delete("code");
@@ -352,12 +402,12 @@
     }
   }
 
-  async function reconnectCurrentRoom() {
-    const roomId = room?.roomId || room?.code || "";
+  function reconnectCurrentRoom() {
+    const roomId = room?.code || currentRoomId || "";
     if (!roomId) return;
     dispatch("roomconnect", {
       roomId,
-      code: room?.code || roomId,
+      code: roomId,
       room,
       source: "manual",
     });
@@ -382,7 +432,8 @@
     }
 
     if (!me) {
-      infoText = "Đã lưu Wizard. Chọn nhà cung cấp để đăng nhập, hệ thống sẽ tự tạo mã ghép cặp sau khi quay lại.";
+      infoText =
+        "Đã lưu Wizard. Chọn nhà cung cấp để đăng nhập, hệ thống sẽ tự tạo mã ghép cặp sau khi quay lại.";
       emitToast("Chọn cách đăng nhập để tạo mã ghép cặp.");
       openProviderPicker({ reason: "wizard-auto", autoPair: true });
       return;
@@ -392,15 +443,39 @@
     await createPairCode({ auto: true, keepInfo: false });
   }
 
+  function setupAuthStateListener() {
+    try {
+      const client = getSupabaseClient();
+      const result = client.auth.onAuthStateChange((_event, _session) => {
+        refreshAuthPairState().catch((err) => {
+          console.error(err);
+          errorText = toErrorMessage(err, "Không thể cập nhật trạng thái đăng nhập.");
+        });
+      });
+      authSubscription = result?.data?.subscription || null;
+    } catch {
+      authSubscription = null;
+    }
+  }
+
   onMount(async () => {
     consumeAuthQueryFlags();
     await refreshAuthPairState();
+    setupAuthStateListener();
 
     if (autoPairRequestedFromQuery && me && hasStartDate && !room) {
       await createPairCode({ auto: true, keepInfo: false });
     } else if (autoPairRequestedFromQuery && !me) {
       infoText = "Đăng nhập chưa hoàn tất. Hãy chọn lại nhà cung cấp.";
       openProviderPicker({ reason: "auth-return", autoPair: true });
+    }
+  });
+
+  onDestroy(() => {
+    try {
+      authSubscription?.unsubscribe?.();
+    } catch {
+      // noop
     }
   });
 
@@ -416,9 +491,10 @@
   <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
     <div>
       <p class="text-xs font-semibold uppercase tracking-[.18em] text-pink-500/80">Kết nối cặp đôi</p>
-      <h2 class="mt-1 text-lg sm:text-xl font-extrabold text-[color:var(--ink)]">Đăng nhập Auth.js & ghép cặp phòng dữ liệu</h2>
+      <h2 class="mt-1 text-lg sm:text-xl font-extrabold text-[color:var(--ink)]">Đăng nhập Supabase Auth & ghép cặp phòng dữ liệu</h2>
       <p class="mt-1 text-sm text-[color:var(--ink2)]">
-        Đăng nhập bằng nhà cung cấp OAuth (Instagram, Facebook, Google, GitHub...) rồi tạo hoặc tham gia phòng 2 người.
+        Đăng nhập bằng OAuth (Facebook, Google, GitHub, Instagram... tùy provider bạn bật trên Supabase) rồi tạo hoặc tham gia
+        phòng 2 người.
       </p>
     </div>
     <div class="flex flex-wrap gap-2">
@@ -426,7 +502,12 @@
         {loading ? "Đang tải..." : "Làm mới"}
       </button>
       {#if me}
-        <button class="btn btn-soft text-sm" type="button" on:click={() => openProviderPicker({ reason: "switch-account" })} disabled={authBusy || pairBusy || !providers.length}>
+        <button
+          class="btn btn-soft text-sm"
+          type="button"
+          on:click={() => openProviderPicker({ reason: "switch-account" })}
+          disabled={authBusy || pairBusy || !providers.length}
+        >
           Đổi tài khoản
         </button>
         <button class="btn btn-soft text-sm" type="button" on:click={logout} disabled={authBusy || pairBusy}>
@@ -443,6 +524,7 @@
   <div class="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-12">
     <div class="xl:col-span-5 rounded-2xl border border-white/70 bg-white/65 p-4">
       <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Tài khoản</p>
+
       {#if loading}
         <p class="mt-2 text-sm text-[color:var(--ink2)]">Đang kiểm tra phiên đăng nhập...</p>
       {:else if me}
@@ -453,15 +535,15 @@
                 {providerIcon(me.provider)}
               </div>
             </div>
-            <div>
-              <p class="text-sm font-semibold text-[color:var(--ink)]">@{me.username}</p>
+            <div class="min-w-0">
+              <p class="text-sm font-semibold text-[color:var(--ink)] truncate">@{me.username}</p>
               <p class="text-xs text-[color:var(--ink2)]">Đăng nhập qua {providerName(me.provider)}</p>
             </div>
           </div>
           <div class="flex flex-wrap gap-2 text-xs">
             <span class="pill">Phiên: hoạt động</span>
             <span class="pill">
-              Firebase: {firebaseStatus === "synced" ? "sẵn sàng" : firebaseStatus === "error" ? "chưa kết nối" : "đang kết nối"}
+              Đồng bộ: {syncStatus === "synced" ? "sẵn sàng" : syncStatus === "saving" ? "đang lưu" : syncStatus === "error" ? "lỗi" : syncStatus === "draft" ? "chưa ghép phòng" : "đang kết nối"}
             </span>
           </div>
         </div>
@@ -483,11 +565,11 @@
         <p class="text-xs font-semibold uppercase tracking-[.12em] text-pink-500/80">Nhà cung cấp đăng nhập</p>
         {#if !authConfigured}
           <p class="mt-2 rounded-xl border border-amber-200/80 bg-amber-50 px-3 py-2 text-sm text-amber-700">
-            Backend chưa cấu hình <code>AUTH_SECRET</code>.
+            Chưa cấu hình <code>VITE_SUPABASE_URL</code> / <code>VITE_SUPABASE_ANON_KEY</code>.
           </p>
         {:else if !providers.length}
           <p class="mt-2 rounded-xl border border-amber-200/80 bg-amber-50 px-3 py-2 text-sm text-amber-700">
-            Chưa bật provider nào trên server. Hãy cấu hình <code>AUTH_*_ID</code> và <code>AUTH_*_SECRET</code>.
+            Chưa bật provider nào trong <code>VITE_SUPABASE_PROVIDERS</code>.
           </p>
         {:else}
           <div class="mt-2 flex flex-wrap gap-2">
@@ -498,7 +580,7 @@
               </span>
             {/each}
           </div>
-          <p class="mt-2 text-xs text-[color:var(--ink2)]">Auth.js providers: {providerSummary}</p>
+          <p class="mt-2 text-xs text-[color:var(--ink2)]">Supabase Auth providers: {providerSummary}</p>
         {/if}
       </div>
     </div>
@@ -532,6 +614,7 @@
             <p class="mt-1 text-sm font-semibold text-[color:var(--ink)]">{room.partner?.username ? `@${room.partner.username}` : "Chưa tham gia"}</p>
           </div>
         </div>
+
         <div class="mt-3 flex flex-wrap gap-2">
           <button class="btn btn-soft text-sm" type="button" on:click={copyRoomLink} disabled={pairBusy || authBusy}>Copy link phòng</button>
           {#if needsConnect}
@@ -603,7 +686,7 @@
     <div class="flex items-center justify-between border-b border-pink-100/70 px-4 py-3 sm:px-5">
       <div>
         <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Đăng nhập</p>
-        <h3 id="providerPickerTitle" class="text-lg font-bold text-[color:var(--ink)]">Chọn nhà cung cấp Auth.js</h3>
+        <h3 id="providerPickerTitle" class="text-lg font-bold text-[color:var(--ink)]">Chọn nhà cung cấp Supabase Auth</h3>
       </div>
       <button type="button" class="btn btn-soft text-sm" on:click={closeProviderPicker} disabled={authBusy}>Đóng</button>
     </div>
@@ -629,7 +712,7 @@
         {#each providers as provider}
           <button
             type="button"
-            class={`group relative overflow-hidden rounded-2xl border border-white/80 bg-white/80 p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md disabled:opacity-60`}
+            class="group relative overflow-hidden rounded-2xl border border-white/80 bg-white/80 p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md disabled:opacity-60"
             on:click={() => startAuthLogin(provider.id)}
             disabled={authBusy || pairBusy}
           >
@@ -647,9 +730,7 @@
                 </div>
                 <span class="pill text-[11px]">Chọn</span>
               </div>
-              <p class="mt-3 text-xs leading-5 text-[color:var(--ink2)]">
-                {providerHint(provider.id)}
-              </p>
+              <p class="mt-3 text-xs leading-5 text-[color:var(--ink2)]">{providerHint(provider.id)}</p>
             </div>
           </button>
         {/each}

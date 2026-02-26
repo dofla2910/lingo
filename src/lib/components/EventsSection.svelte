@@ -93,7 +93,7 @@
     <div>
       <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Svelte • Ngày đặc biệt</p>
       <h2 class="text-lg sm:text-xl font-bold text-[color:var(--ink)]">Quản lý ngày quan trọng</h2>
-      <p class="text-sm text-[color:var(--ink2)]">CRUD native Svelte, lưu và đồng bộ trực tiếp trên Firebase Realtime Database.</p>
+      <p class="text-sm text-[color:var(--ink2)]">CRUD native Svelte, lưu và đồng bộ trực tiếp trên Supabase (PostgreSQL + Realtime).</p>
     </div>
     <p class="text-xs text-[color:var(--ink2)]">{countLabel}</p>
   </div>

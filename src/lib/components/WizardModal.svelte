@@ -250,7 +250,7 @@
           <label class="label mt-4 block" for="wiz_start_date">Chọn ngày & giờ</label>
           <input id="wiz_start_date" class="field mt-1 text-sm" type="datetime-local" bind:value={startDate} />
           <p class="mt-2 text-sm text-[color:var(--ink2)]">
-            Dữ liệu sẽ lưu trên Firebase Realtime Database của phòng hiện tại. Bạn có thể sửa lại trong Cài đặt bất kỳ lúc nào.
+            Dữ liệu sẽ lưu trên Supabase (PostgreSQL + Realtime) của phòng hiện tại. Bạn có thể sửa lại trong Cài đặt bất kỳ lúc nào.
           </p>
         </section>
       {:else if step === 1}

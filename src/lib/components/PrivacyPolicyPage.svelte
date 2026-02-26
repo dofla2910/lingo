@@ -19,61 +19,103 @@
     <section class="card rounded-3xl p-4 sm:p-6">
       <div class="privacy-policy-content">
         <h3>Chính Sách Bảo Mật - Lingo</h3>
-        <p><em>Cập nhật lần cuối: 25/02/2026</em></p>
+        <p><em>Cập nhật lần cuối: 26/02/2026</em></p>
 
         <h4>1. Cam kết chung</h4>
-        <p>Chào mừng bạn đến với <strong>Lingo</strong> – Ngôn ngữ tình yêu riêng. Chúng tôi hiểu rằng những kỷ niệm và thông tin của cặp đôi là vô cùng riêng tư. Chính sách này mô tả cách Lingo xử lý dữ liệu trong kiến trúc hiện tại để hai người có thể đồng bộ cùng một "phòng" dữ liệu.</p>
+        <p>
+          Chào mừng bạn đến với <strong>Lingo</strong> – Ngôn ngữ tình yêu riêng. Chúng tôi hiểu rằng những kỷ niệm và thông tin của
+          cặp đôi là vô cùng riêng tư. Chính sách này giải thích cách Lingo vận hành trong kiến trúc hiện tại để hai bạn có thể dùng
+          chung một phòng dữ liệu và đồng bộ theo thời gian thực.
+        </p>
 
         <h4>2. Dữ liệu chúng tôi xử lý</h4>
-        <p>Để ứng dụng hoạt động cho 2 người dùng chung, Lingo hiện sử dụng <strong>Firebase Realtime Database</strong> và <strong>Auth.js (OAuth)</strong>. Các nhóm dữ liệu có thể được xử lý gồm:</p>
+        <p>Lingo có thể xử lý các nhóm dữ liệu sau để ứng dụng hoạt động:</p>
         <ul>
-          <li><strong>Dữ liệu hồ sơ cặp đôi:</strong> tên, ngày sinh, giới tính, ảnh đại diện, ngày bắt đầu yêu, ngày đặc biệt, cột mốc.</li>
-          <li><strong>Dữ liệu ghép cặp:</strong> mã phòng 6 ký tự, trạng thái phòng (đang chờ/đã ghép cặp), thời gian tạo/hết hạn.</li>
-          <li><strong>Dữ liệu đăng nhập tối thiểu:</strong> ID tài khoản OAuth, tên hiển thị (username/name), nhà cung cấp đăng nhập (ví dụ: Instagram, Facebook, Google, GitHub), ảnh đại diện (nếu provider trả về).</li>
-          <li><strong>Dữ liệu phiên (session):</strong> cookie đăng nhập và thông tin phiên để xác thực các thao tác ghép cặp.</li>
+          <li>
+            <strong>Dữ liệu hồ sơ cặp đôi:</strong> tên, ngày sinh, giới tính, ảnh đại diện, ngày bắt đầu yêu, ngày đặc biệt, mốc
+            tình yêu.
+          </li>
+          <li>
+            <strong>Dữ liệu ghép cặp:</strong> mã phòng 6 ký tự, trạng thái phòng (đang chờ/đã ghép cặp), thông tin hai thành viên
+            của phòng.
+          </li>
+          <li>
+            <strong>Dữ liệu đăng nhập tối thiểu:</strong> ID tài khoản, tên hiển thị, nhà cung cấp đăng nhập (OAuth provider) và ảnh
+            đại diện nếu provider trả về.
+          </li>
         </ul>
 
         <h4>3. Cách dữ liệu được lưu trữ</h4>
-        <p><strong>Dữ liệu nội dung của cặp đôi</strong> (hồ sơ, mốc thời gian, sự kiện) được lưu trên <strong>Firebase Realtime Database</strong> theo mã phòng dùng chung giữa hai bạn.</p>
-        <p><strong>Dữ liệu ghép cặp và phiên đăng nhập</strong> được xử lý bởi server (Elysia + Auth.js). Trong phiên bản hiện tại, một phần dữ liệu ghép cặp trên server có thể được lưu tạm trong bộ nhớ (in-memory) để phục vụ mã phòng và phiên làm việc.</p>
-        <p>Dữ liệu không còn hoạt động theo cơ chế Local-only/LocalStorage như phiên bản trước.</p>
+        <p>
+          <strong>Dữ liệu nội dung của cặp đôi</strong> (hồ sơ, sự kiện, cột mốc, cấu hình hiển thị) được lưu trong
+          <strong>Supabase PostgreSQL</strong> và đồng bộ thời gian thực qua <strong>Supabase Realtime</strong>.
+        </p>
+        <p>
+          <strong>Dữ liệu ghép cặp</strong> (mã phòng, thành viên phòng) cũng được lưu trong Supabase, cùng dự án với dữ liệu nội
+          dung.
+        </p>
+        <p>
+          Phiên bản hiện tại <strong>không yêu cầu backend server riêng</strong> do bạn tự vận hành cho các thao tác CRUD/đăng nhập
+          cơ bản; ứng dụng frontend gọi trực tiếp Supabase qua SDK JavaScript.
+        </p>
 
-        <h4>4. Đăng nhập &amp; dịch vụ bên thứ ba</h4>
-        <p>Lingo sử dụng các dịch vụ bên thứ ba để vận hành:</p>
+        <h4>4. Dịch vụ bên thứ ba</h4>
+        <p>Để Lingo hoạt động, chúng tôi sử dụng các dịch vụ công cộng sau:</p>
         <ul>
-          <li><strong>Auth.js + OAuth Providers:</strong> xác thực đăng nhập (Instagram, Facebook, Google, GitHub... tùy cấu hình máy chủ).</li>
-          <li><strong>Firebase Realtime Database:</strong> lưu và đồng bộ dữ liệu cặp đôi theo thời gian thực.</li>
+          <li><strong>Supabase:</strong> Auth (đăng nhập OAuth), PostgreSQL Database, Realtime.</li>
           <li><strong>Google Fonts:</strong> hiển thị phông chữ "Be Vietnam Pro".</li>
+          <li><strong>FontAwesome/CDN (nếu bật trong giao diện):</strong> hiển thị biểu tượng.</li>
           <li><strong>Hạ tầng triển khai (ví dụ Vercel):</strong> phục vụ website frontend.</li>
         </ul>
-        <p>Các dịch vụ này có thể ghi nhận dữ liệu kỹ thuật như địa chỉ IP, user-agent, thời gian truy cập hoặc thông tin xác thực cần thiết cho đăng nhập/đồng bộ.</p>
+        <p>
+          Các dịch vụ này có thể ghi nhận dữ liệu kỹ thuật như địa chỉ IP, user-agent, thời gian truy cập hoặc thông tin đăng nhập
+          cần thiết để cung cấp dịch vụ.
+        </p>
 
-        <h4>5. Mục đích sử dụng dữ liệu</h4>
-        <p>Chúng tôi chỉ sử dụng dữ liệu cho các mục đích vận hành ứng dụng:</p>
+        <h4>5. Đăng nhập & phiên làm việc</h4>
+        <p>
+          Lingo sử dụng <strong>Supabase Auth</strong> để đăng nhập bằng các nhà cung cấp OAuth (ví dụ: Facebook, Google, GitHub,
+          ... tùy cấu hình dự án Supabase).
+        </p>
+        <p>
+          SDK Supabase có thể lưu thông tin phiên đăng nhập trên trình duyệt (ví dụ token phiên) để duy trì trạng thái đăng nhập.
+          Đây là dữ liệu xác thực, không phải dữ liệu nội dung kỷ niệm của hai bạn.
+        </p>
+
+        <h4>6. Mục đích sử dụng dữ liệu</h4>
+        <p>Chúng tôi chỉ sử dụng dữ liệu cho mục đích vận hành ứng dụng:</p>
         <ul>
           <li>Đăng nhập và xác thực người dùng.</li>
-          <li>Tạo mã ghép cặp 6 ký tự để kết nối 2 người vào cùng một phòng.</li>
+          <li>Tạo/ghép mã phòng 6 ký tự để kết nối 2 người.</li>
           <li>Lưu, đồng bộ và cập nhật dữ liệu tình yêu theo thời gian thực.</li>
           <li>Khôi phục trạng thái ứng dụng khi bạn quay lại sử dụng.</li>
         </ul>
         <p>Chúng tôi không bán dữ liệu cá nhân của bạn cho bên thứ ba.</p>
 
-        <h4>6. Quyền kiểm soát của bạn</h4>
+        <h4>7. Quyền kiểm soát của bạn</h4>
         <p>Bạn có toàn quyền quản lý dữ liệu trong phòng của mình:</p>
         <ul>
           <li><strong>Sửa đổi:</strong> Thay đổi thông tin bất cứ lúc nào trong phần Cài đặt.</li>
           <li><strong>Xuất/Nhập dữ liệu:</strong> Dùng tính năng sao lưu/khôi phục JSON trong ứng dụng.</li>
           <li><strong>Xóa dữ liệu:</strong> Dùng nút "Đặt lại dữ liệu" để ghi đè dữ liệu phòng hiện tại.</li>
-          <li><strong>Đăng xuất:</strong> Ngắt phiên đăng nhập OAuth khỏi ứng dụng.</li>
-          <li><strong>Thu hồi quyền OAuth:</strong> Có thể thực hiện trực tiếp trong phần quản lý ứng dụng của nhà cung cấp (Facebook/Google/GitHub/Meta...).</li>
+          <li><strong>Đăng xuất:</strong> Ngắt phiên đăng nhập Supabase Auth khỏi ứng dụng.</li>
         </ul>
 
-        <h4>7. Bảo mật</h4>
-        <p>Chúng tôi áp dụng các biện pháp kỹ thuật ở mức ứng dụng (xác thực qua Auth.js, phân tách dữ liệu theo mã phòng, cấu hình Firebase Rules) để giảm thiểu truy cập trái phép. Tuy nhiên, không có hệ thống nào an toàn tuyệt đối.</p>
-        <p>Vui lòng không chia sẻ công khai mã phòng 6 ký tự hoặc link phòng nếu bạn không muốn người khác truy cập dữ liệu của cặp đôi.</p>
+        <h4>8. Bảo mật</h4>
+        <p>
+          Lingo sử dụng cơ chế phân quyền dữ liệu theo phòng kết hợp xác thực Supabase và chính sách truy cập dữ liệu (RLS) để giảm
+          thiểu truy cập trái phép. Tuy nhiên, không có hệ thống nào an toàn tuyệt đối.
+        </p>
+        <p>
+          Vui lòng không chia sẻ công khai mã phòng 6 ký tự hoặc link phòng nếu bạn không muốn người khác truy cập dữ liệu của cặp
+          đôi.
+        </p>
 
-        <h4>8. Liên hệ</h4>
-        <p>Lingo là một dự án cá nhân phi lợi nhuận dành tặng các cặp đôi. Nếu có thắc mắc về quyền riêng tư hoặc bảo mật, vui lòng liên hệ nhà phát triển.</p>
+        <h4>9. Liên hệ</h4>
+        <p>
+          Lingo là một dự án cá nhân phi lợi nhuận dành tặng các cặp đôi. Nếu có thắc mắc về quyền riêng tư hoặc bảo mật, vui lòng
+          liên hệ nhà phát triển.
+        </p>
       </div>
     </section>
   </div>
