@@ -104,16 +104,16 @@ function friendlySupabaseError(err, fallback) {
   const lower = msg.toLowerCase();
 
   if (isSchemaMissingError(err)) {
-    return "Thiếu bảng/hàm Supabase cho Lingo. Hãy chạy file SQL schema trong supabase/lingo_schema.sql.";
+    return "Ứng dụng chưa sẵn sàng dữ liệu. Vui lòng thử lại sau.";
   }
   if (lower.includes("permission denied") || lower.includes("rls") || lower.includes("violates row-level security")) {
-    return "Supabase từ chối truy cập (RLS). Hãy kiểm tra policy và đảm bảo bạn đã đăng nhập + ghép cặp đúng phòng.";
+    return "Không thể truy cập dữ liệu phòng. Hãy đăng nhập lại hoặc kiểm tra mã phòng.";
   }
   if (lower.includes("invalid api key") || lower.includes("jwt")) {
-    return "Cấu hình Supabase chưa đúng (URL/anon key hoặc phiên đăng nhập không hợp lệ).";
+    return "Thiết lập đăng nhập hoặc phiên làm việc chưa hợp lệ.";
   }
   if (lower.includes("failed to fetch") || lower.includes("network")) {
-    return "Không thể kết nối Supabase. Kiểm tra mạng hoặc project Supabase.";
+    return "Không thể kết nối dữ liệu. Hãy kiểm tra mạng.";
   }
   return msg || fallback;
 }
@@ -129,7 +129,7 @@ function setDraftState(nextState, message = "") {
     roomId: remote.roomCode || "",
     error:
       message ||
-      "Chưa kết nối phòng Supabase. Dữ liệu đang ở bộ nhớ tạm (trong phiên hiện tại) cho đến khi bạn đăng nhập + tạo/join phòng.",
+      "Chưa kết nối phòng chung. Dữ liệu đang ở bộ nhớ tạm của phiên hiện tại cho đến khi bạn đăng nhập và ghép cặp.",
   });
   return normalized;
 }
@@ -222,7 +222,7 @@ async function attachRoomStateChannel(client, roomUuid) {
           console.error(err);
           setMeta({
             status: "error",
-            error: friendlySupabaseError(err, "Không thể đọc realtime state từ Supabase."),
+            error: friendlySupabaseError(err, "Không thể tải dữ liệu mới của phòng."),
           });
         }
       },
@@ -233,7 +233,7 @@ async function attachRoomStateChannel(client, roomUuid) {
           ready: true,
           loading: false,
           status: "error",
-          error: "Realtime Supabase bị lỗi. Kiểm tra cấu hình Realtime cho bảng lingo_room_states.",
+          error: "Kết nối cập nhật thời gian thực đang bị gián đoạn. Hãy thử tải lại trang.",
         });
       }
     });
@@ -244,7 +244,7 @@ async function attachRoomStateChannel(client, roomUuid) {
 async function connectToRoomByCode(client, code) {
   const user = await getCurrentAuthUser(client);
   if (!user) {
-    throw new Error("Hãy đăng nhập Supabase trước khi truy cập phòng dữ liệu.");
+    throw new Error("Hãy đăng nhập trước khi truy cập phòng dữ liệu.");
   }
 
   const roomRow = await fetchRoomRowForCurrentMember(client, code);
@@ -302,7 +302,7 @@ async function writeRemoteState(nextState) {
     })
     .catch((err) => {
       console.error(err);
-      const message = friendlySupabaseError(err, "Không thể lưu Supabase.");
+      const message = friendlySupabaseError(err, "Không thể lưu dữ liệu.");
       setMeta({ status: "error", error: message });
       throw err;
     });
@@ -319,12 +319,12 @@ async function persistState(next) {
       ready: true,
       loading: false,
       status: "error",
-      error: `Supabase chưa cấu hình: ${cfgErr}`,
+      error: "Tính năng lưu dữ liệu tạm thời chưa sẵn sàng.",
       roomId: remote.roomCode || "",
       source: "supabase-postgres",
     });
     stateStore.set(normalized);
-    throw new Error(`Supabase chưa cấu hình: ${cfgErr}`);
+    throw new Error(`Cấu hình lưu dữ liệu chưa sẵn sàng: ${cfgErr}`);
   }
 
   if (!remote.roomUuid) {
@@ -336,7 +336,7 @@ async function persistState(next) {
       }
     }
     if (!remote.roomUuid) {
-      const message = currentMeta().error || "Chưa xác định được phòng dữ liệu Supabase.";
+      const message = currentMeta().error || "Chưa xác định được phòng dữ liệu.";
       if (isMissingRoomMessage(message)) {
         return setDraftState(normalized, message);
       }
@@ -466,9 +466,9 @@ export async function initLingoSharedStateBridge() {
       status: "error",
       roomId: remote.roomCode || "",
       source: "supabase-postgres",
-      error: `Supabase chưa cấu hình: ${cfgErr}`,
+      error: "Tính năng lưu dữ liệu tạm thời chưa sẵn sàng.",
     });
-    throw new Error(`Supabase chưa cấu hình: ${cfgErr}`);
+    throw new Error(`Cấu hình lưu dữ liệu chưa sẵn sàng: ${cfgErr}`);
   }
 
   remote.inited = true;
@@ -512,7 +512,7 @@ export async function initLingoSharedStateBridge() {
         status: "error",
         roomId: remote.roomCode || "",
         source: "supabase-postgres",
-        error: friendlySupabaseError(err, "Không thể khởi tạo kết nối Supabase."),
+        error: friendlySupabaseError(err, "Không thể khởi tạo kết nối dữ liệu."),
       });
       reject(err);
     }
@@ -536,4 +536,3 @@ export function destroyLingoSharedStateBridge() {
   remote.inited = false;
   remote.initPromise = null;
 }
-

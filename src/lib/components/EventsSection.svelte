@@ -89,13 +89,10 @@
 </script>
 
 <section class="card rounded-3xl p-4 sm:p-5">
-  <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-    <div>
-      <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Svelte • Ngày đặc biệt</p>
-      <h2 class="text-lg sm:text-xl font-bold text-[color:var(--ink)]">Quản lý ngày quan trọng</h2>
-      <p class="text-sm text-[color:var(--ink2)]">CRUD native Svelte, lưu và đồng bộ trực tiếp trên Supabase (PostgreSQL + Realtime).</p>
-    </div>
-    <p class="text-xs text-[color:var(--ink2)]">{countLabel}</p>
+  <div>
+    <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Ngày đặc biệt</p>
+    <h2 class="text-lg sm:text-xl font-bold text-[color:var(--ink)]">Quản lý ngày quan trọng</h2>
+    <p class="text-sm text-[color:var(--ink2)]">CRUD + sắp xếp ngày gần nhất + highlight hôm nay.</p>
   </div>
 
   <form class="mt-4 space-y-3 rounded-2xl border border-white/70 bg-white/65 p-4" on:submit|preventDefault={submitForm}>
@@ -139,7 +136,12 @@
     </div>
   </form>
 
-  <div class="mt-4 space-y-3">
+  <div class="mt-4 flex items-center justify-between">
+    <p class="text-sm font-semibold text-[color:var(--ink)]">Danh sách sự kiện</p>
+    <p class="text-xs text-[color:var(--ink2)]">{countLabel}</p>
+  </div>
+
+  <div class="mt-2 space-y-3">
     {#if sortedEvents.length === 0}
       <div class="rounded-2xl border border-white/70 bg-white/60 p-4 text-sm text-[color:var(--ink2)]">
         Chưa có sự kiện nào. Hãy thêm một ngày thật đặc biệt cho hai bạn.
@@ -159,11 +161,10 @@
                 <span class="inline-flex items-center rounded-full border border-pink-200/80 bg-pink-50 px-2 py-0.5 text-xs font-semibold text-pink-700">
                   {EVENT_CATEGORY_LABELS[row.event.category] || "Khác"}
                 </span>
-                {#if row.info.today}
-                  <span class="inline-flex items-center rounded-full border border-rose-200/80 bg-rose-50 px-2 py-0.5 text-xs font-bold text-rose-600">
-                    Hôm nay
-                  </span>
+                {#if row.event.repeatAnnual}
+                  <span class="pill">Lặp hàng năm</span>
                 {/if}
+                <span class={`pill ${row.info.today ? "text-pink-600" : ""}`}>{row.info.today ? "Hôm nay" : "Sắp tới"}</span>
               </div>
               <h3 class="mt-2 text-base font-bold text-[color:var(--ink)]">{row.event.title}</h3>
               {#if row.event.note}
@@ -176,9 +177,6 @@
                 {/if}
                 {#if row.info.daysLeft !== null}
                   • {row.info.daysLeft === 0 ? "Đến hôm nay" : `Còn ${row.info.daysLeft} ngày`}
-                {/if}
-                {#if row.event.repeatAnnual}
-                  • Lặp hàng năm
                 {/if}
               </p>
             </div>

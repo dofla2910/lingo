@@ -72,13 +72,13 @@
 
   function providerHint(id) {
     const k = String(id || "").toLowerCase();
-    if (k === "instagram") return "Phù hợp nếu cả hai thường dùng Instagram. Tùy cấu hình Supabase/Auth provider.";
+    if (k === "instagram") return "Phù hợp nếu cả hai thường dùng Instagram. Có thể cần bật sẵn trong phần cài đặt đăng nhập.";
     if (k === "facebook") return "Dễ dùng cho đa số người dùng, thuận tiện chia sẻ mã ghép cặp.";
     if (k === "google") return "Đăng nhập nhanh, thường ổn định với callback URL.";
     if (k === "github") return "Tiện cho tài khoản kỹ thuật / dev.";
     if (k === "discord") return "Nhanh cho cặp đôi dùng Discord.";
     if (k === "apple") return "Phù hợp hệ sinh thái Apple, cần cấu hình provider trước.";
-    return "Đăng nhập OAuth để tạo hoặc tham gia phòng cặp đôi.";
+    return "Đăng nhập để tạo hoặc tham gia phòng cặp đôi.";
   }
 
   function providerAccent(id) {
@@ -97,17 +97,17 @@
     const lower = msg.toLowerCase();
 
     if (isSchemaMissingError?.(err)) {
-      return "Thiếu bảng/hàm Supabase cho Lingo. Hãy chạy file supabase/lingo_schema.sql.";
+      return "Ứng dụng chưa sẵn sàng dữ liệu. Vui lòng thử lại sau.";
     }
     if (msg.includes("UNAUTHENTICATED")) return "Vui lòng đăng nhập trước.";
     if (msg.includes("INVALID_CODE")) return "Mã ghép cặp không hợp lệ (cần đúng 6 ký tự).";
     if (msg.includes("CODE_NOT_FOUND_OR_EXPIRED")) return "Mã không tồn tại hoặc đã hết hạn.";
     if (msg.includes("ROOM_ALREADY_HAS_2_PEOPLE")) return "Phòng này đã đủ 2 người.";
     if (lower.includes("row-level security") || lower.includes("permission denied")) {
-      return "Supabase từ chối truy cập (RLS). Hãy kiểm tra policy hoặc đăng nhập lại.";
+      return "Không thể truy cập dữ liệu phòng. Hãy đăng nhập lại hoặc thử lại sau.";
     }
     if (lower.includes("failed to fetch") || lower.includes("network")) {
-      return "Không thể kết nối Supabase. Hãy kiểm tra mạng.";
+      return "Không thể kết nối dữ liệu. Hãy kiểm tra mạng.";
     }
     if (lower.includes("supabase chưa cấu hình") || lower.includes("vite_supabase_")) {
       return msg;
@@ -131,7 +131,7 @@
       me = null;
       room = null;
       if (!joinCode && currentRoomId) joinCode = normalizeCode(currentRoomId);
-      errorText = `Supabase chưa cấu hình: ${cfgErr}`;
+      errorText = "Tính năng đăng nhập tạm thời chưa sẵn sàng.";
       loading = false;
       return;
     }
@@ -165,11 +165,11 @@
   function openProviderPicker(options = {}) {
     const cfgErr = getSupabaseConfigError();
     if (cfgErr) {
-      errorText = `Supabase chưa cấu hình: ${cfgErr}`;
+      errorText = "Tính năng đăng nhập tạm thời chưa sẵn sàng.";
       return;
     }
     if (!providers.length) {
-      errorText = "Chưa bật provider đăng nhập nào. Hãy cấu hình VITE_SUPABASE_PROVIDERS.";
+      errorText = "Hiện chưa có cách đăng nhập nào khả dụng.";
       return;
     }
     providerPickerReason = String(options.reason || "");
@@ -307,7 +307,7 @@
       const client = getSupabaseClient();
       const row = await createPairRoom(me, client);
       const nextRoom = mapRoomRowToDto(row, me.id);
-      if (!nextRoom?.code) throw new Error("Không nhận được mã ghép cặp từ Supabase.");
+      if (!nextRoom?.code) throw new Error("Không nhận được mã ghép cặp.");
 
       const reused = !!room?.code && room.code === nextRoom.code;
       room = nextRoom;
@@ -490,46 +490,62 @@
 <section class="card rounded-3xl p-4 sm:p-5">
   <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
     <div>
-      <p class="text-xs font-semibold uppercase tracking-[.18em] text-pink-500/80">Kết nối cặp đôi</p>
-      <h2 class="mt-1 text-lg sm:text-xl font-extrabold text-[color:var(--ink)]">Đăng nhập Supabase Auth & ghép cặp phòng dữ liệu</h2>
+      <p class="text-xs font-semibold uppercase tracking-[.18em] text-pink-500/80">Bắt đầu cùng nhau</p>
+      <h2 class="mt-1 text-lg sm:text-xl font-extrabold text-[color:var(--ink)]">Đăng nhập và ghép cặp</h2>
       <p class="mt-1 text-sm text-[color:var(--ink2)]">
-        Đăng nhập bằng OAuth (Facebook, Google, GitHub, Instagram... tùy provider bạn bật trên Supabase) rồi tạo hoặc tham gia
-        phòng 2 người.
+        Khi vào trang, hệ thống sẽ tự kiểm tra phiên đăng nhập của bạn. Sau đó hãy tạo mã 6 ký tự hoặc nhập mã người kia gửi.
       </p>
     </div>
-    <div class="flex flex-wrap gap-2">
-      <button class="btn btn-soft text-sm" type="button" on:click={refreshAuthPairState} disabled={loading || authBusy || pairBusy}>
+    <div class="grid grid-cols-1 gap-2 w-full sm:w-auto sm:grid-cols-2 lg:flex lg:flex-wrap">
+      <button class="btn btn-soft text-sm w-full sm:w-auto" type="button" on:click={refreshAuthPairState} disabled={loading || authBusy || pairBusy}>
         {loading ? "Đang tải..." : "Làm mới"}
       </button>
       {#if me}
         <button
-          class="btn btn-soft text-sm"
+          class="btn btn-soft text-sm w-full sm:w-auto"
           type="button"
           on:click={() => openProviderPicker({ reason: "switch-account" })}
           disabled={authBusy || pairBusy || !providers.length}
         >
           Đổi tài khoản
         </button>
-        <button class="btn btn-soft text-sm" type="button" on:click={logout} disabled={authBusy || pairBusy}>
+        <button class="btn btn-soft text-sm w-full sm:w-auto" type="button" on:click={logout} disabled={authBusy || pairBusy}>
           {authBusy ? "Đang thoát..." : "Đăng xuất"}
         </button>
       {:else if canShowProviderTrigger}
-        <button class="btn btn-primary text-sm" type="button" on:click={() => openProviderPicker({ reason: "manual-login" })} disabled={authBusy || pairBusy}>
+        <button class="btn btn-primary text-sm w-full sm:w-auto" type="button" on:click={() => openProviderPicker({ reason: "manual-login" })} disabled={authBusy || pairBusy}>
           {authBusy ? "Đang chuyển..." : "Chọn cách đăng nhập"}
         </button>
       {/if}
     </div>
   </div>
 
+  <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+    <div class="rounded-2xl border border-white/70 bg-white/70 p-3">
+      <p class="text-xs font-semibold uppercase tracking-[.12em] text-pink-500/80">1. Đăng nhập</p>
+      <p class="mt-1 text-sm text-[color:var(--ink2)]">Kiểm tra phiên hiện có và vào lại tài khoản nhanh.</p>
+    </div>
+    <div class="rounded-2xl border border-white/70 bg-white/70 p-3">
+      <p class="text-xs font-semibold uppercase tracking-[.12em] text-pink-500/80">2. Ghép cặp</p>
+      <p class="mt-1 text-sm text-[color:var(--ink2)]">Tạo mã 6 ký tự hoặc nhập mã do người kia gửi.</p>
+    </div>
+    <div class="rounded-2xl border border-white/70 bg-white/70 p-3">
+      <p class="text-xs font-semibold uppercase tracking-[.12em] text-pink-500/80">3. Thiết lập</p>
+      <p class="mt-1 text-sm text-[color:var(--ink2)]">Mở Wizard hoặc nhập bản sao lưu JSON để bắt đầu.</p>
+    </div>
+  </div>
+
   <div class="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-12">
     <div class="xl:col-span-5 rounded-2xl border border-white/70 bg-white/65 p-4">
-      <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Tài khoản</p>
+      <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Tài khoản của bạn</p>
 
       {#if loading}
-        <p class="mt-2 text-sm text-[color:var(--ink2)]">Đang kiểm tra phiên đăng nhập...</p>
+        <div class="mt-2 rounded-xl border border-white/70 bg-white/70 px-3 py-3 text-sm text-[color:var(--ink2)]">
+          Đang kiểm tra phiên đăng nhập...
+        </div>
       {:else if me}
         <div class="mt-2 space-y-2">
-          <div class="flex items-center gap-3">
+          <div class="flex items-center gap-3 rounded-xl border border-white/70 bg-white/70 p-3">
             <div class="avatar-wrap">
               <div class="h-10 w-10 rounded-xl bg-white/90 flex items-center justify-center text-lg">
                 {providerIcon(me.provider)}
@@ -537,13 +553,21 @@
             </div>
             <div class="min-w-0">
               <p class="text-sm font-semibold text-[color:var(--ink)] truncate">@{me.username}</p>
-              <p class="text-xs text-[color:var(--ink2)]">Đăng nhập qua {providerName(me.provider)}</p>
+              <p class="text-xs text-[color:var(--ink2)]">{providerName(me.provider)}</p>
             </div>
           </div>
           <div class="flex flex-wrap gap-2 text-xs">
-            <span class="pill">Phiên: hoạt động</span>
+            <span class="pill">Đã đăng nhập</span>
             <span class="pill">
-              Đồng bộ: {syncStatus === "synced" ? "sẵn sàng" : syncStatus === "saving" ? "đang lưu" : syncStatus === "error" ? "lỗi" : syncStatus === "draft" ? "chưa ghép phòng" : "đang kết nối"}
+              {syncStatus === "synced"
+                ? "Đã kết nối phòng"
+                : syncStatus === "saving"
+                  ? "Đang lưu"
+                  : syncStatus === "error"
+                    ? "Lỗi kết nối"
+                    : syncStatus === "draft"
+                      ? "Chưa ghép phòng"
+                      : "Đang kiểm tra"}
             </span>
           </div>
         </div>
@@ -551,25 +575,25 @@
         <div class="mt-2 rounded-xl border border-dashed border-pink-200 bg-white/55 px-3 py-3">
           <p class="text-sm font-medium text-[color:var(--ink)]">Chưa đăng nhập</p>
           <p class="mt-1 text-sm text-[color:var(--ink2)]">
-            Chọn một nhà cung cấp để đăng nhập, sau đó tạo mã 6 ký tự hoặc nhập mã do người kia gửi.
+            Chọn một cách đăng nhập để tiếp tục. Sau đó bạn có thể tạo mã ghép cặp hoặc nhập mã đã nhận.
           </p>
           {#if canShowProviderTrigger}
-            <button class="btn btn-primary mt-3 text-sm" type="button" on:click={() => openProviderPicker({ reason: "account-card" })}>
-              Mở popup chọn provider
+            <button class="btn btn-primary mt-3 text-sm w-full sm:w-auto" type="button" on:click={() => openProviderPicker({ reason: "account-card" })}>
+              Mở danh sách đăng nhập
             </button>
           {/if}
         </div>
       {/if}
 
       <div class="mt-3">
-        <p class="text-xs font-semibold uppercase tracking-[.12em] text-pink-500/80">Nhà cung cấp đăng nhập</p>
+        <p class="text-xs font-semibold uppercase tracking-[.12em] text-pink-500/80">Cách đăng nhập đang bật</p>
         {#if !authConfigured}
           <p class="mt-2 rounded-xl border border-amber-200/80 bg-amber-50 px-3 py-2 text-sm text-amber-700">
-            Chưa cấu hình <code>VITE_SUPABASE_URL</code> / <code>VITE_SUPABASE_ANON_KEY</code>.
+            Tính năng đăng nhập chưa sẵn sàng. Vui lòng thử lại sau.
           </p>
         {:else if !providers.length}
           <p class="mt-2 rounded-xl border border-amber-200/80 bg-amber-50 px-3 py-2 text-sm text-amber-700">
-            Chưa bật provider nào trong <code>VITE_SUPABASE_PROVIDERS</code>.
+            Chưa có cách đăng nhập nào được bật.
           </p>
         {:else}
           <div class="mt-2 flex flex-wrap gap-2">
@@ -580,7 +604,6 @@
               </span>
             {/each}
           </div>
-          <p class="mt-2 text-xs text-[color:var(--ink2)]">Supabase Auth providers: {providerSummary}</p>
         {/if}
       </div>
     </div>
@@ -588,13 +611,13 @@
     <div class="xl:col-span-7 rounded-2xl border border-white/70 bg-white/65 p-4">
       <div class="flex items-start justify-between gap-3">
         <div>
-          <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Ghép cặp</p>
+          <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Phòng của hai bạn</p>
           <p class="mt-1 text-sm text-[color:var(--ink2)]">
             {#if room}
               Mã hiện tại: <span class="font-bold text-[color:var(--ink)]">{room.code}</span>
               ({room.status === "paired" ? "đã đủ 2 người" : "đang chờ người kia"})
             {:else}
-              Chưa có phòng. Bạn có thể tạo mã mới hoặc nhập mã để tham gia.
+              Chưa có phòng. Hãy tạo mã mới hoặc nhập mã để tham gia.
             {/if}
           </p>
         </div>
@@ -610,28 +633,31 @@
             <p class="mt-1 text-sm font-semibold text-[color:var(--ink)]">{room.owner?.username ? `@${room.owner.username}` : "—"}</p>
           </div>
           <div class="rounded-xl border border-white/70 bg-white/70 px-3 py-3">
-            <p class="text-xs font-semibold uppercase tracking-[.12em] text-pink-500/80">Người ghép cặp</p>
+            <p class="text-xs font-semibold uppercase tracking-[.12em] text-pink-500/80">Người còn lại</p>
             <p class="mt-1 text-sm font-semibold text-[color:var(--ink)]">{room.partner?.username ? `@${room.partner.username}` : "Chưa tham gia"}</p>
           </div>
         </div>
 
-        <div class="mt-3 flex flex-wrap gap-2">
-          <button class="btn btn-soft text-sm" type="button" on:click={copyRoomLink} disabled={pairBusy || authBusy}>Copy link phòng</button>
+        <div class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          <button class="btn btn-soft text-sm w-full" type="button" on:click={copyRoomLink} disabled={pairBusy || authBusy}>Copy link phòng</button>
           {#if needsConnect}
-            <button class="btn btn-primary text-sm" type="button" on:click={reconnectCurrentRoom} disabled={pairBusy || authBusy}>
-              Kết nối phòng {room.code}
+            <button class="btn btn-primary text-sm w-full" type="button" on:click={reconnectCurrentRoom} disabled={pairBusy || authBusy}>
+              Kết nối lại phòng
             </button>
           {/if}
           {#if !hasStartDate}
-            <button class="btn btn-soft text-sm" type="button" on:click={() => dispatch("openwizard")}>
-              Mở Wizard để hoàn tất hồ sơ
+            <button class="btn btn-soft text-sm w-full" type="button" on:click={() => dispatch("openwizard")}>
+              Mở Wizard
+            </button>
+            <button class="btn btn-soft text-sm w-full sm:col-span-2 lg:col-span-1" type="button" on:click={() => dispatch("openimport")}>
+              Nhập JSON
             </button>
           {/if}
         </div>
       {/if}
 
-      <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-end">
-        <div>
+      <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div class="sm:col-span-2">
           <label for="join_code" class="label">Nhập mã ghép cặp (6 ký tự)</label>
           <input
             id="join_code"
@@ -644,17 +670,17 @@
             disabled={pairBusy || authBusy}
           />
         </div>
-        <button class="btn btn-soft text-sm" type="button" on:click={joinPairCode} disabled={pairBusy || authBusy || !me}>
-          {pairBusy ? "Đang xử lý..." : "Tham gia"}
+        <button class="btn btn-soft text-sm w-full" type="button" on:click={joinPairCode} disabled={pairBusy || authBusy || !me}>
+          {pairBusy ? "Đang xử lý..." : "Tham gia bằng mã"}
         </button>
-        <button class="btn btn-primary text-sm" type="button" on:click={() => createPairCode()} disabled={pairBusy || authBusy || !me}>
-          {pairBusy ? "Đang tạo..." : "Tạo mã"}
+        <button class="btn btn-primary text-sm w-full" type="button" on:click={() => createPairCode()} disabled={pairBusy || authBusy || !me}>
+          {pairBusy ? "Đang tạo..." : "Tạo mã mới"}
         </button>
       </div>
 
       {#if !hasStartDate}
         <p class="mt-2 text-xs text-[color:var(--ink2)]">
-          Mẹo: nên hoàn tất Wizard trước để mã ghép cặp được tạo sau khi đã có hồ sơ tình yêu.
+          Sau khi ghép phòng, bạn có thể bắt đầu bằng Wizard hoặc dùng file sao lưu JSON.
         </p>
       {/if}
 
@@ -686,7 +712,7 @@
     <div class="flex items-center justify-between border-b border-pink-100/70 px-4 py-3 sm:px-5">
       <div>
         <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Đăng nhập</p>
-        <h3 id="providerPickerTitle" class="text-lg font-bold text-[color:var(--ink)]">Chọn nhà cung cấp Supabase Auth</h3>
+        <h3 id="providerPickerTitle" class="text-lg font-bold text-[color:var(--ink)]">Chọn tài khoản để tiếp tục</h3>
       </div>
       <button type="button" class="btn btn-soft text-sm" on:click={closeProviderPicker} disabled={authBusy}>Đóng</button>
     </div>
@@ -694,7 +720,7 @@
     <div class="max-h-[78vh] overflow-y-auto px-4 py-4 sm:px-5">
       <div class="rounded-2xl border border-white/70 bg-white/65 p-4">
         <div class="flex flex-wrap items-center gap-2">
-          <span class="pill">OAuth đa provider</span>
+          <span class="pill">Đăng nhập nhanh</span>
           {#if pendingAutoPairAfterAuth}
             <span class="pill">Tự tạo mã sau đăng nhập</span>
           {/if}
@@ -703,7 +729,7 @@
           {#if pendingAutoPairAfterAuth}
             Sau khi đăng nhập xong và quay lại trang, Lingo sẽ tự tạo mã ghép cặp 6 ký tự cho bạn.
           {:else}
-            Chọn một nhà cung cấp để đăng nhập vào hệ thống ghép cặp.
+            Chọn một tài khoản để đăng nhập và tiếp tục ghép cặp.
           {/if}
         </p>
       </div>
@@ -712,25 +738,27 @@
         {#each providers as provider}
           <button
             type="button"
-            class="group relative overflow-hidden rounded-2xl border border-white/80 bg-white/80 p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md disabled:opacity-60"
+            class="group relative overflow-hidden rounded-2xl border border-white/80 bg-white/80 p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md disabled:opacity-60 min-h-[112px]"
             on:click={() => startAuthLogin(provider.id)}
             disabled={authBusy || pairBusy}
           >
             <div class={`pointer-events-none absolute inset-0 bg-gradient-to-br ${providerAccent(provider.id)}`}></div>
             <div class="relative">
               <div class="flex items-start justify-between gap-3">
-                <div class="flex items-center gap-3">
-                  <div class="h-11 w-11 rounded-xl border border-white/90 bg-white/90 flex items-center justify-center text-xl shadow-sm">
+                <div class="flex items-center gap-3 min-w-0">
+                  <div class="h-11 w-11 rounded-xl border border-white/90 bg-white/90 flex items-center justify-center text-xl shadow-sm shrink-0">
                     {providerIcon(provider.id)}
                   </div>
-                  <div>
-                    <p class="text-sm font-bold text-[color:var(--ink)]">{providerName(provider.id, provider.name)}</p>
-                    <p class="text-xs text-[color:var(--ink2)]">Đăng nhập OAuth</p>
+                  <div class="min-w-0">
+                    <p class="text-sm font-bold text-[color:var(--ink)] truncate">{providerName(provider.id, provider.name)}</p>
+                    <p class="text-xs text-[color:var(--ink2)]">Đăng nhập</p>
                   </div>
                 </div>
-                <span class="pill text-[11px]">Chọn</span>
+                <span class="pill text-[11px] shrink-0">Chọn</span>
               </div>
-              <p class="mt-3 text-xs leading-5 text-[color:var(--ink2)]">{providerHint(provider.id)}</p>
+              <p class="mt-3 text-xs leading-5 text-[color:var(--ink2)]">
+                {providerHint(provider.id)}
+              </p>
             </div>
           </button>
         {/each}

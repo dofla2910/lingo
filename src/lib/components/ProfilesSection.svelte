@@ -1,4 +1,5 @@
 <script>
+  import { createEventDispatcher } from "svelte";
   import {
     calculateAge,
     ELEMENT_META,
@@ -12,6 +13,7 @@
   export let state;
   export let now = Date.now();
 
+  const dispatch = createEventDispatcher();
   const fallbackAvatar = fallbackFlamingoAvatar(120);
 
   function getAvatar(person) {
@@ -43,10 +45,11 @@
 <section class="card rounded-3xl p-4 sm:p-5">
   <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
     <div>
-      <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Svelte • Cặp đôi</p>
+      <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Cặp đôi</p>
       <h2 class="text-lg sm:text-xl font-bold text-[color:var(--ink)]">Hồ sơ tình yêu của hai bạn</h2>
-      <p class="text-sm text-[color:var(--ink2)]">Dữ liệu hồ sơ được đọc trực tiếp từ Supabase (PostgreSQL + Realtime).</p>
+      <p class="text-sm text-[color:var(--ink2)]">Tuổi, cung hoàng đạo, nguyên tố và avatar hồng hạc.</p>
     </div>
+    <button class="btn btn-soft text-sm" type="button" on:click={() => dispatch("quickedit")}>Sửa hồ sơ</button>
   </div>
 
   <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -85,7 +88,7 @@
 
         <div class="mt-3 flex flex-wrap items-center gap-2">
           <span class="inline-flex items-center rounded-full border border-pink-200/80 bg-pink-50 px-2.5 py-1 text-xs font-semibold text-pink-700">
-            {person.zodiac ? `✦ ${person.zodiac.name}` : "✦ Chưa có cung"}
+            {person.zodiac ? `✨ ${person.zodiac.name}` : "✨ Chưa có cung"}
           </span>
           {#if person.elementMeta}
             <span

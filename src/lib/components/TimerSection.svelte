@@ -35,7 +35,7 @@
 <section class="card rounded-3xl p-4 sm:p-5">
   <div class="flex flex-col gap-3 sm:flex-row sm:justify-between">
     <div>
-      <span class="pill text-pink-600">⏱ Bộ đếm Svelte</span>
+      <span class="pill text-pink-600">⏱ Thời gian yêu đang chạy</span>
       <h2 class="mt-3 text-lg sm:text-xl font-bold text-[color:var(--ink)]">Bộ đếm tình yêu thời gian thực</h2>
       <p class="mt-1 text-sm text-[color:var(--ink2)]">{timerNote}</p>
     </div>
@@ -59,5 +59,10 @@
       </div>
     {/each}
   </div>
-</section>
 
+  <p class="sr-only" aria-live="polite">
+    {startDate
+      ? `Bộ đếm đang hiển thị ${tiles.years} năm, ${tiles.months} tháng, ${tiles.days} ngày, ${tiles.hours} giờ, ${tiles.minutes} phút, ${tiles.seconds} giây`
+      : "Chưa thiết lập ngày bắt đầu yêu"}
+  </p>
+</section>

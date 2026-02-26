@@ -181,7 +181,7 @@
     const file = event.currentTarget.files?.[0];
     event.currentTarget.value = "";
     if (!file) return;
-    const ok = confirm("Nhập JSON sẽ ghi đè dữ liệu hiện tại trên phòng Supabase này. Tiếp tục?");
+    const ok = confirm("Nhập JSON sẽ ghi đè dữ liệu hiện tại của hai bạn. Tiếp tục?");
     if (!ok) return;
     try {
       const text = await file.text();
@@ -195,7 +195,7 @@
   }
 
   async function resetAll() {
-    const ok = confirm("Đặt lại toàn bộ dữ liệu Lingo trên phòng Supabase này?");
+    const ok = confirm("Đặt lại toàn bộ dữ liệu Lingo của hai bạn?");
     if (!ok) return;
     try {
       await actions.resetAll();
@@ -231,7 +231,7 @@
         <label class="label" for="svelte_start_date">Ngày bắt đầu yêu</label>
         <input id="svelte_start_date" class="field mt-1 text-sm" type="datetime-local" bind:value={startDate} />
         <p class="mt-2 text-xs text-[color:var(--ink2)]">
-          Dữ liệu được lưu trực tiếp trên Supabase (PostgreSQL + Realtime) của phòng hiện tại.
+          Dữ liệu sẽ được lưu vào phòng chung hiện tại của hai bạn.
         </p>
       </div>
 
