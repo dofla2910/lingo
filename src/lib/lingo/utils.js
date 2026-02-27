@@ -324,6 +324,7 @@ export function isTodayEvent(event, today = new Date()) {
 
 export function sortEventsForDisplay(events, today = new Date()) {
   const list = Array.isArray(events) ? events.slice() : [];
+  const todayStart = startOfDay(today).getTime();
   return list
     .map((event) => ({
       event,
@@ -332,7 +333,17 @@ export function sortEventsForDisplay(events, today = new Date()) {
     .sort((a, b) => {
       const at = a.nextOccurrence ? a.nextOccurrence.getTime() : Number.POSITIVE_INFINITY;
       const bt = b.nextOccurrence ? b.nextOccurrence.getTime() : Number.POSITIVE_INFINITY;
-      if (at !== bt) return at - bt;
+
+      const aPast = at < todayStart;
+      const bPast = bt < todayStart;
+      if (aPast !== bPast) return aPast ? 1 : -1;
+
+      if (aPast && bPast) {
+        if (at !== bt) return bt - at; // Past events: nearest past first.
+      } else if (at !== bt) {
+        return at - bt; // Upcoming/today events: nearest future first.
+      }
+
       return String(a.event.title || "").localeCompare(String(b.event.title || ""), "vi");
     });
 }

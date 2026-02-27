@@ -866,7 +866,7 @@
 </div>
 
 <div class={`modal ${viewerOpen ? "open" : ""}`} aria-hidden={!viewerOpen} on:click|self={closePhotoViewer}>
-  <div class="modal-card max-w-5xl" role="dialog" aria-modal="true" aria-labelledby="viewerTitle" tabindex="-1">
+  <div class="modal-card flex max-h-[92vh] max-w-5xl flex-col" role="dialog" aria-modal="true" aria-labelledby="viewerTitle" tabindex="-1">
     <div class="flex items-center justify-between border-b border-pink-100/70 px-4 py-3">
       <div>
         <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Xem ảnh</p>
@@ -877,18 +877,18 @@
 
     {#if viewerPhoto}
       <div class="space-y-3 px-3 py-3 sm:px-4">
-        <div class="overflow-hidden rounded-2xl border border-pink-100/80 bg-black/90">
+        <div class="flex min-h-[220px] max-h-[calc(92vh-14rem)] items-center justify-center overflow-hidden rounded-2xl border border-pink-100/80 bg-black/90">
           <img src={viewerPhoto.image_url} alt={viewerPhoto.note || "Ảnh kỷ niệm"} class="max-h-[72vh] w-full object-contain" />
         </div>
 
-        <div class="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-pink-100/80 bg-white/80 px-3 py-2">
-          <div>
-            <p class="text-sm font-semibold text-[color:var(--ink)] break-words">{viewerPhoto.note || "Không có ghi chú"}</p>
+        <div class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-2xl border border-pink-100/80 bg-white/80 px-3 py-2">
+          <div class="min-w-0">
+            <p class="truncate text-sm font-semibold text-[color:var(--ink)]">{viewerPhoto.note || "Không có ghi chú"}</p>
             <p class="mt-1 text-xs text-[color:var(--ink2)]">{formatDateTime(viewerPhoto.created_at)}</p>
           </div>
 
           {#if photos.length > 1}
-            <div class="flex gap-2">
+            <div class="flex shrink-0 gap-2">
               <button type="button" class="btn btn-soft text-sm" on:click={showPrevPhoto}>← Trước</button>
               <button type="button" class="btn btn-soft text-sm" on:click={showNextPhoto}>Sau →</button>
             </div>

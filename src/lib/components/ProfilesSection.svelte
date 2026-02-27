@@ -35,6 +35,27 @@
     if (event?.currentTarget) event.currentTarget.src = fallbackAvatar;
   }
 
+  function zodiacIcon(zodiac) {
+    const name = String(zodiac?.name || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase();
+
+    if (name.includes("bach duong")) return "♈";
+    if (name.includes("kim nguu")) return "♉";
+    if (name.includes("song tu")) return "♊";
+    if (name.includes("cu giai")) return "♋";
+    if (name.includes("su tu")) return "♌";
+    if (name.includes("xu nu")) return "♍";
+    if (name.includes("thien binh")) return "♎";
+    if (name.includes("bo cap")) return "♏";
+    if (name.includes("nhan ma")) return "♐";
+    if (name.includes("ma ket")) return "♑";
+    if (name.includes("bao binh")) return "♒";
+    if (name.includes("song ngu")) return "♓";
+    return "☉";
+  }
+
   $: today = new Date(now);
   $: ownerRaw = meta?.ownerProfile || state?.couple?.personA || {};
   $: partnerRaw = meta?.partnerProfile || state?.couple?.personB || {};
@@ -101,7 +122,7 @@
 
         <div class="mt-3 flex flex-wrap items-center gap-2">
           <span class="inline-flex items-center rounded-full border border-pink-200/80 bg-pink-50 px-2.5 py-1 text-xs font-semibold text-pink-700">
-            {person.zodiac ? `✨ ${person.zodiac.name}` : "✨ Chưa có cung"}
+            {person.zodiac ? `${zodiacIcon(person.zodiac)} ${person.zodiac.name}` : "☉ Chưa có cung"}
           </span>
           {#if person.elementMeta}
             <span

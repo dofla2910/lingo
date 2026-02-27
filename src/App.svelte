@@ -265,7 +265,7 @@
   <PrivacyPolicyPage />
 {:else}
   <main id="mainContent" tabindex="-1" class="relative z-10 px-4 py-4 sm:px-6 lg:px-8">
-    <div class="mx-auto max-w-6xl space-y-4">
+    <div class="mx-auto flex max-w-6xl flex-col gap-4">
       <header class="card rounded-3xl p-4 sm:p-5">
         <div class="flex min-w-0 items-start justify-between gap-4">
           <div class="flex min-w-0 items-start gap-4">
@@ -355,7 +355,7 @@
             <GalleryTogetherSection on:toast={(e) => showToast(e.detail)} />
           </div>
 
-          <div class="pinterest-tile space-y-4">
+          <div class="pinterest-tile">
             <section class="card rounded-3xl p-3 sm:p-4 hidden lg:block" aria-label="Kết nối & cài đặt">
               <div class="mb-3">
                 <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Điều khiển nhanh</p>

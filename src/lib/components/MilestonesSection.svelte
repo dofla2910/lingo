@@ -24,7 +24,7 @@
         }`}
       >
         {#if item.achieved}
-          <span class="absolute right-2 top-2 text-sm" aria-hidden="true">🦩🏆</span>
+          <span class="absolute right-2 top-2 text-sm" aria-hidden="true">🦩</span>
         {:else}
           <span class="absolute right-2 top-2 text-xs text-[color:var(--ink2)]" aria-hidden="true">🔒</span>
         {/if}
