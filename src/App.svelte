@@ -256,8 +256,14 @@
       <header class="card rounded-3xl p-4 sm:p-5">
         <div class="flex min-w-0 items-start justify-between gap-4">
           <div class="flex min-w-0 items-start gap-4">
-            <div class="h-14 w-14 rounded-2xl flex items-center justify-center bg-white/70 border border-white/80 shadow-sm shadow-pink-200/40">
-              <span class="text-2xl" aria-hidden="true">🦩</span>
+            <div class="h-14 w-14 rounded-2xl bg-white/70 border border-white/80 shadow-sm shadow-pink-200/40 overflow-hidden p-1">
+              <img
+                src="/logos/lingo-icon.svg?v=20260227"
+                alt="Logo Lingo"
+                class="h-full w-full object-contain"
+                loading="eager"
+                decoding="async"
+              />
             </div>
             <div class="min-w-0">
               <p class="text-xs font-semibold uppercase tracking-[.18em] text-pink-500/80">Lingo</p>

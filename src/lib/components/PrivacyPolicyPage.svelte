@@ -3,8 +3,14 @@
     <section class="card rounded-3xl p-4 sm:p-5">
       <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div class="flex items-start gap-3">
-          <div class="h-12 w-12 rounded-2xl flex items-center justify-center bg-white/75 border border-white/80 shadow-sm shadow-pink-200/40">
-            <span class="text-xl" aria-hidden="true">🦩</span>
+          <div class="h-12 w-12 rounded-2xl bg-white/75 border border-white/80 shadow-sm shadow-pink-200/40 overflow-hidden p-1">
+            <img
+              src="/logos/lingo-icon.svg?v=20260227"
+              alt="Logo Lingo"
+              class="h-full w-full object-contain"
+              loading="eager"
+              decoding="async"
+            />
           </div>
           <div>
             <p class="text-xs font-semibold uppercase tracking-[.18em] text-pink-500/80">Lingo</p>
