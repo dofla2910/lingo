@@ -52,6 +52,7 @@
   let loginUsername = "";
   let loginPassword = "";
   let loginPasswordConfirm = "";
+  let pendingJoinCodeAfterAuth = "";
   let myProfile = null;
   let profileModalOpen = false;
   let profileBusy = false;
@@ -152,6 +153,42 @@
     infoText = "";
   }
 
+  function preferredJoinCode() {
+    const fromCurrent = normalizeCode(currentRoomId);
+    if (fromCurrent.length === 6) return fromCurrent;
+    const fromPending = normalizeCode(pendingJoinCodeAfterAuth);
+    if (fromPending.length === 6) return fromPending;
+    const fromInput = normalizeCode(joinCode);
+    if (fromInput.length === 6) return fromInput;
+    return "";
+  }
+
+  function emitAuthState() {
+    dispatch("authstate", {
+      authenticated: !!me?.id,
+      loading: !!loading,
+      roomCode: room?.code || "",
+      joinCode: preferredJoinCode(),
+    });
+  }
+
+  async function maybeAutoJoinExistingRoom() {
+    if (pairBusy || authBusy || !me || room?.code) return false;
+    const code = preferredJoinCode();
+    if (code.length !== 6) return false;
+
+    joinCode = code;
+
+    if (!hasValidProfile()) {
+      pendingJoinCodeAfterAuth = code;
+      openProfileModal({ required: true, keepMessages: true });
+      return false;
+    }
+
+    await joinPairCode();
+    return true;
+  }
+
   function profileFromRow(row, fallbackUser = null) {
     const fallbackName = sanitizeUsername(fallbackUser?.username || "") || "user";
     return {
@@ -235,7 +272,9 @@
       myProfile = profileFromRow(row, me);
       profileModalOpen = false;
       emitToast("Đã lưu hồ sơ cá nhân.");
-      if (pendingAutoPairAfterAuth && hasStartDate && !room) {
+      if (await maybeAutoJoinExistingRoom()) {
+        pendingJoinCodeAfterAuth = "";
+      } else if (pendingAutoPairAfterAuth && hasStartDate && !room) {
         await createPairCode({ auto: true, keepInfo: false });
       } else if (room?.code) {
         reconnectCurrentRoom();
@@ -264,6 +303,7 @@
       if (!joinCode && currentRoomId) joinCode = normalizeCode(currentRoomId);
       errorText = "Tính năng đăng nhập tạm thời chưa sẵn sàng.";
       loading = false;
+      emitAuthState();
       return;
     }
 
@@ -293,6 +333,7 @@
       errorText = toErrorMessage(err, "Không thể tải trạng thái đăng nhập.");
     } finally {
       loading = false;
+      emitAuthState();
     }
   }
 
@@ -400,8 +441,12 @@
       credentialModalOpen = false;
       await refreshAuthPairState();
 
-      if (!hasValidProfile()) {
+      if (await maybeAutoJoinExistingRoom()) {
+        pendingJoinCodeAfterAuth = "";
+      } else if (!hasValidProfile()) {
         openProfileModal({ required: true, keepMessages: true });
+      } else if (room?.code) {
+        reconnectCurrentRoom();
       } else if (pendingAutoPairAfterAuth && hasStartDate && !room) {
         await createPairCode({ auto: true, keepInfo: false });
       }
@@ -567,12 +612,14 @@
       room = null;
       myProfile = null;
       joinCode = "";
+      pendingJoinCodeAfterAuth = "";
       pendingAutoPairAfterAuth = false;
       autoPairRequestedFromQuery = false;
       profileModalOpen = false;
       profilePromptedForUserId = "";
       infoText = "Đã đăng xuất.";
       emitToast("Đã đăng xuất.");
+      emitAuthState();
       dispatch("refreshroom", { clearRoomQuery: true });
     } catch (err) {
       errorText = toErrorMessage(err, "Không thể đăng xuất.");
@@ -679,6 +726,7 @@
       if (!nextRoom) throw new Error("Không thể nhận thông tin phòng sau khi ghép cặp.");
 
       room = nextRoom;
+      pendingJoinCodeAfterAuth = "";
       pendingAutoPairAfterAuth = false;
       autoPairRequestedFromQuery = false;
 
@@ -787,7 +835,9 @@
     await refreshAuthPairState();
     setupAuthStateListener();
 
-    if (autoPairRequestedFromQuery && me && hasStartDate && !room) {
+    if (await maybeAutoJoinExistingRoom()) {
+      pendingJoinCodeAfterAuth = "";
+    } else if (autoPairRequestedFromQuery && me && hasStartDate && !room) {
       await createPairCode({ auto: true, keepInfo: false });
     } else if (autoPairRequestedFromQuery && !me) {
       infoText = "Đăng nhập chưa hoàn tất. Vui lòng nhập lại tên đăng nhập và mật khẩu.";
@@ -830,6 +880,9 @@
   $: if (!open && providerPickerOpen) providerPickerOpen = false;
   $: if (!open && credentialModalOpen) credentialModalOpen = false;
   $: if (!open && profileModalOpen) profileModalOpen = false;
+  $: if (open && !loading && !authBusy && authConfigured && !me && !credentialModalOpen && !providerPickerOpen) {
+    openCredentialModal({ mode: "signin", keepMessages: true, clearPassword: false });
+  }
 </script>
 
 <svelte:window on:keydown={handleKeydown} />

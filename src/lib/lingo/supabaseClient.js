@@ -46,8 +46,12 @@ export function sanitizeUsername(value) {
     .toLowerCase()
     .replace(/\s+/g, "")
     .replace(/[^a-z0-9._-]/g, "");
-  const noLeading = raw.replace(/^[._-]+/, "");
-  const noTrailing = noLeading.replace(/[._-]+$/, "");
+  // Keep leading "_" and "-" for natural username typing.
+  // Only trim leading dots to avoid invalid local-part edge cases.
+  const noLeading = raw.replace(/^[.]+/, "");
+  // Keep trailing "_" and "-" so users can type naturally in the input.
+  // Only trim trailing dots to keep generated internal email local-part valid.
+  const noTrailing = noLeading.replace(/[.]+$/, "");
   const collapsed = noTrailing.replace(/[._-]{2,}/g, "_");
   return collapsed.slice(0, 32);
 }

@@ -39,6 +39,8 @@
   let removePopstateListener = () => {};
   let lastAutoPromptRoomId = "";
   let pairingAutoPrompted = false;
+  let authStateLoading = true;
+  let isAuthenticated = false;
 
   function showToast(message, ms = 2200) {
     toastMessage = message;
@@ -59,6 +61,12 @@
 
   function closePairing() {
     pairingOpen = false;
+  }
+
+  function handleAuthState(event) {
+    const detail = event?.detail || {};
+    authStateLoading = !!detail.loading;
+    isAuthenticated = !!detail.authenticated;
   }
 
   function openImportFlow() {
@@ -211,6 +219,10 @@
     wizardRequired = true;
     wizardOpen = true;
     showToast("Bắt đầu với Wizard để thiết lập cặp đôi.");
+  }
+
+  $: if (!isPrivacyRoute && !authStateLoading && !isAuthenticated && !pairingOpen && !wizardOpen && !settingsOpen) {
+    pairingOpen = true;
   }
 
   $: if (!hasStartDate && (celebrationQueue.length || activeCelebration)) {
@@ -397,6 +409,7 @@
     on:toast={(e) => showToast(e.detail)}
     on:openwizard={() => openWizard(!hasStartDate)}
     on:openimport={openImportFlow}
+    on:authstate={handleAuthState}
     on:refreshroom={(e) => reconnectRoom("", { clearRoomQuery: !!e.detail?.clearRoomQuery })}
     on:roomconnect={(e) => {
       closePairing();
