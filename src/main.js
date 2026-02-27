@@ -1,5 +1,5 @@
 import "./app.css";
-import "./lib/legacy/legacy.css";
+import "./styles/lingo-native.css";
 import App from "./App.svelte";
 
 const app = new App({

@@ -3,3 +3,6 @@
 node_modules
 dist
 server
+android/key.properties
+android/*.jks
+android/*.keystore

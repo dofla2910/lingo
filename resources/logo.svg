@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="Lingo flamingo tulip mark">
+  <defs>
+    <linearGradient id="wing" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FFA0C8" />
+      <stop offset="100%" stop-color="#F2648A" />
+    </linearGradient>
+    <linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFB6D6" />
+      <stop offset="100%" stop-color="#FF7BA8" />
+    </linearGradient>
+    <linearGradient id="tulip" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FF7D9C" />
+      <stop offset="100%" stop-color="#E6496D" />
+    </linearGradient>
+  </defs>
+
+  <g transform="translate(40 34)">
+    <circle cx="470" cy="480" r="410" fill="#ffffff" opacity="0.05" />
+
+    <path
+      d="M577 174c68 10 120 69 120 138 0 62-39 117-98 139l-35 13c-50 19-82 68-82 122v135c0 70-57 127-127 127s-127-57-127-127c0-64 48-117 111-126l46-6c23-4 39-23 39-46v-40c0-67 27-129 76-177z"
+      fill="url(#body)"
+    />
+    <path
+      d="M656 154c66 10 116 65 116 131 0 60-41 114-101 134l-56 18-56-82 44-42c23-22 35-50 35-82 0-43-24-78-60-101z"
+      fill="url(#wing)"
+    />
+
+    <path d="M698 286l124-18-93 86" fill="none" stroke="#704052" stroke-width="22" stroke-linecap="round" stroke-linejoin="round" />
+    <circle cx="694" cy="255" r="14" fill="#3f2732" />
+
+    <path d="M424 782v153M514 782v153" fill="none" stroke="#E46B8A" stroke-width="25" stroke-linecap="round" />
+    <path d="M402 932h54M496 932h56" fill="none" stroke="#7A4D5F" stroke-width="20" stroke-linecap="round" />
+
+    <path d="M748 214c30 0 55 24 55 54 0 45-53 72-89 102-36-30-89-57-89-102 0-30 25-54 55-54 18 0 29 8 35 17 7-9 18-17 33-17z" fill="#FF5D8A" />
+
+    <g transform="translate(121 604)">
+      <path d="M206 250C162 227 143 183 143 147c0-45 29-80 74-92 17-5 31-19 38-36 11 21 30 36 52 40 43 9 75 46 75 90 0 40-24 84-73 104z" fill="url(#tulip)" />
+      <path d="M259 256c44-22 69-64 69-106 0-34-16-65-43-83 13-6 27-10 42-10 51 0 94 42 94 93 0 59-46 117-121 137z" fill="#FF8FAE" />
+      <path d="M246 262h20v140h-20z" fill="#5EAF6D" />
+      <path d="M205 398c24-16 47-17 80 0" fill="none" stroke="#4E9C5C" stroke-width="12" stroke-linecap="round" />
+    </g>
+  </g>
+</svg>

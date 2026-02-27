@@ -1,0 +1,9 @@
+{
+  "appId": "com.lingo.app",
+  "appName": "Lingo",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  }
+}

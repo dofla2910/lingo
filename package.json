@@ -6,17 +6,34 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "assets:generate": "npx @capacitor/assets generate --assetPath resources --iconBackgroundColor \"rgb(254,197,229)\" --iconBackgroundColorDark \"rgb(107,44,72)\" --splashBackgroundColor \"rgb(255,248,252)\" --splashBackgroundColorDark \"rgb(43,26,36)\" --logoSplashScale 0.24 --ios --android",
+    "mobile:sync": "npm run build && npm run assets:generate && npx cap sync",
+    "mobile:add:android": "npx cap add android",
+    "mobile:add:ios": "npx cap add ios",
+    "mobile:open:android": "npx cap open android",
+    "mobile:open:ios": "npx cap open ios",
+    "mobile:build:android:aab": "npm run mobile:sync && cd android && gradlew.bat bundleRelease",
+    "mobile:build:android:apk:debug": "npm run mobile:sync && cd android && gradlew.bat assembleDebug",
+    "mobile:build:android:apk:release": "npm run mobile:sync && cd android && gradlew.bat assembleRelease",
+    "mobile:build:ios:archive": "npm run mobile:sync && xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release -destination generic/platform=iOS -archivePath ios/build/Lingo.xcarchive -allowProvisioningUpdates archive",
+    "mobile:build:ios:ipa:adhoc": "npm run mobile:build:ios:archive && xcodebuild -exportArchive -archivePath ios/build/Lingo.xcarchive -exportPath ios/build/adhoc -exportOptionsPlist ios/ExportOptionsAdHoc.plist -allowProvisioningUpdates"
   },
   "dependencies": {
+    "@capacitor/android": "^8.1.0",
+    "@capacitor/cli": "^8.1.0",
+    "@capacitor/core": "^8.1.0",
+    "@capacitor/ios": "^8.1.0",
     "@supabase/supabase-js": "^2.49.8"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
     "@sveltejs/vite-plugin-svelte": "^3.1.2",
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.49",
     "svelte": "^4.2.19",
     "tailwindcss": "^3.4.17",
-    "vite": "^5.4.14"
+    "vite": "^5.4.14",
+    "vite-plugin-pwa": "^1.2.0"
   }
 }

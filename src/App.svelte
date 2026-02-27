@@ -12,6 +12,7 @@
   import WizardModal from "./lib/components/WizardModal.svelte";
   import MilestoneCelebrationModal from "./lib/components/MilestoneCelebrationModal.svelte";
   import PrivacyPolicyPage from "./lib/components/PrivacyPolicyPage.svelte";
+  import PwaInstallButton from "./lib/components/PwaInstallButton.svelte";
   import { buildMilestoneView, parseDateTime } from "./lib/lingo/utils.js";
   import {
     destroyLingoSharedStateBridge,
@@ -253,17 +254,25 @@
   <main id="mainContent" tabindex="-1" class="relative z-10 px-4 py-4 sm:px-6 lg:px-8">
     <div class="mx-auto max-w-6xl space-y-4">
       <header class="card rounded-3xl p-4 sm:p-5">
-        <div class="flex min-w-0 items-start gap-4">
-          <div class="h-14 w-14 rounded-2xl flex items-center justify-center bg-white/70 border border-white/80 shadow-sm shadow-pink-200/40">
-            <span class="text-2xl" aria-hidden="true">🦩</span>
+        <div class="flex min-w-0 items-start justify-between gap-4">
+          <div class="flex min-w-0 items-start gap-4">
+            <div class="h-14 w-14 rounded-2xl flex items-center justify-center bg-white/70 border border-white/80 shadow-sm shadow-pink-200/40">
+              <span class="text-2xl" aria-hidden="true">🦩</span>
+            </div>
+            <div class="min-w-0">
+              <p class="text-xs font-semibold uppercase tracking-[.18em] text-pink-500/80">Lingo</p>
+              <h1 class="text-xl sm:text-2xl font-extrabold leading-tight text-[color:var(--ink)]">Bộ đếm ngày yêu Hồng Hạc</h1>
+              <p class="mt-1 text-sm text-[color:var(--ink2)]">
+                Tình yêu bền vững như loài Hạc (chung thủy trọn đời) và rực rỡ như hoa Tulip (tình yêu hoàn hảo).
+              </p>
+            </div>
           </div>
-          <div class="min-w-0">
-            <p class="text-xs font-semibold uppercase tracking-[.18em] text-pink-500/80">Lingo</p>
-            <h1 class="text-xl sm:text-2xl font-extrabold leading-tight text-[color:var(--ink)]">Bộ đếm ngày yêu Hồng Hạc</h1>
-            <p class="mt-1 text-sm text-[color:var(--ink2)]">
-              Tình yêu bền vững như loài Hạc (chung thủy trọn đời) và rực rỡ như hoa Tulip (tình yêu hoàn hảo).
-            </p>
+          <div class="hidden shrink-0 sm:block">
+            <PwaInstallButton buttonClass="btn btn-soft text-sm whitespace-nowrap" label="Cài ứng dụng" compact={true} on:toast={(e) => showToast(e.detail)} />
           </div>
+        </div>
+        <div class="mt-3 sm:hidden">
+          <PwaInstallButton buttonClass="btn btn-soft text-sm w-full" label="Cài ứng dụng" compact={true} on:toast={(e) => showToast(e.detail)} />
         </div>
       </header>
       <div class="pinterest-board">
@@ -292,7 +301,7 @@
                 <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Điều khiển nhanh</p>
                 <h3 class="text-base font-bold leading-tight text-[color:var(--ink)]">Kết nối & cài đặt</h3>
               </div>
-              <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
+              <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <button
                   class={`btn text-sm w-full ${hasRoom ? "btn-soft" : "btn-primary"}`}
                   type="button"
@@ -302,6 +311,7 @@
                 </button>
                 <button class="btn btn-soft text-sm w-full" type="button" on:click={openSettings}>Cài đặt</button>
                 <button class="btn btn-primary text-sm w-full" type="button" on:click={() => openWizard(false)}>Wizard nhanh</button>
+                <PwaInstallButton buttonClass="btn btn-soft text-sm w-full" label="Cài ứng dụng" compact={true} on:toast={(e) => showToast(e.detail)} />
               </div>
             </section>
           </div>
@@ -328,7 +338,7 @@
                 <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Điều khiển nhanh</p>
                 <h3 class="text-base font-bold leading-tight text-[color:var(--ink)]">Kết nối & cài đặt</h3>
               </div>
-              <div class="grid grid-cols-1 gap-2 sm:grid-cols-3 lg:grid-cols-1">
+              <div class="grid grid-cols-1 gap-2">
                 <button
                   class={`btn text-sm w-full ${hasRoom ? "btn-soft" : "btn-primary"}`}
                   type="button"
@@ -338,6 +348,7 @@
                 </button>
                 <button class="btn btn-soft text-sm w-full" type="button" on:click={openSettings}>Cài đặt</button>
                 <button class="btn btn-primary text-sm w-full" type="button" on:click={() => openWizard(false)}>Wizard nhanh</button>
+                <PwaInstallButton buttonClass="btn btn-soft text-sm w-full" label="Cài ứng dụng" compact={true} on:toast={(e) => showToast(e.detail)} />
               </div>
             </section>
 
@@ -354,7 +365,8 @@
             <p class="font-semibold text-[color:var(--ink)]">Riêng tư & cài đặt</p>
             <p>Dữ liệu được lưu trong phòng chung của hai bạn và đồng bộ giữa các thiết bị đã ghép cặp.</p>
           </div>
-          <div class="flex gap-2">
+          <div class="flex flex-wrap gap-2">
+            <PwaInstallButton buttonClass="btn btn-soft text-sm" label="Cài ứng dụng" on:toast={(e) => showToast(e.detail)} />
             <button class="btn btn-soft text-sm" type="button" on:click={openSettings}>Mở cài đặt</button>
             <button class="btn btn-primary text-sm" type="button" on:click={() => openWizard(false)}>Wizard nhanh</button>
           </div>
