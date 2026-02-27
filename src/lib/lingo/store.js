@@ -12,6 +12,7 @@ import {
   getMyPairRoom,
   getSupabaseClient,
   getSupabaseConfigError,
+  getUserProfilesByIds,
   isNoRowsError,
   isSchemaMissingError,
   sanitizeRoomCode,
@@ -25,6 +26,9 @@ const metaStore = writable({
   roomId: "",
   error: "",
   source: "supabase-postgres",
+  myUserId: "",
+  ownerProfile: null,
+  partnerProfile: null,
 });
 
 export const lingoState = { subscribe: stateStore.subscribe };
@@ -94,6 +98,41 @@ function unwrapRemotePayload(raw) {
   };
 }
 
+function normalizeProfileForMeta(profile) {
+  if (!profile || typeof profile !== "object") return null;
+  return {
+    userId: String(profile.userId || "").trim(),
+    name: String(profile.name || "").trim(),
+    birthday: String(profile.birthday || "").trim(),
+    gender: ["nam", "nu", "khac", "khong_tiet_lo"].includes(profile.gender) ? profile.gender : "khong_tiet_lo",
+    avatarUrl: String(profile.avatarUrl || "").trim(),
+  };
+}
+
+function fallbackMemberProfileFromRoomRow(roomRow, key = "owner") {
+  if (!roomRow || typeof roomRow !== "object") return null;
+  const userId = String(roomRow[`${key}_user_id`] || "").trim();
+  if (!userId) return null;
+  return normalizeProfileForMeta({
+    userId,
+    name: String(roomRow[`${key}_username`] || key),
+    birthday: "",
+    gender: "khong_tiet_lo",
+    avatarUrl: String(roomRow[`${key}_avatar_url`] || ""),
+  });
+}
+
+async function resolveRoomMemberProfiles(client, roomRow) {
+  const ownerId = String(roomRow?.owner_user_id || "").trim();
+  const partnerId = String(roomRow?.partner_user_id || "").trim();
+  const ids = [ownerId, partnerId].filter(Boolean);
+  const rows = ids.length ? await getUserProfilesByIds(ids, client).catch(() => []) : [];
+  const byUserId = new Map(rows.map((p) => [String(p.userId || "").trim(), normalizeProfileForMeta(p)]));
+  const ownerProfile = byUserId.get(ownerId) || fallbackMemberProfileFromRoomRow(roomRow, "owner");
+  const partnerProfile = byUserId.get(partnerId) || fallbackMemberProfileFromRoomRow(roomRow, "partner");
+  return { ownerProfile, partnerProfile };
+}
+
 function isMissingRoomMessage(message) {
   const msg = String(message || "").toLowerCase();
   return msg.includes("phòng dữ liệu") || msg.includes("phong du lieu") || msg.includes("room");
@@ -127,6 +166,9 @@ function setDraftState(nextState, message = "") {
     loading: false,
     status: "draft",
     roomId: remote.roomCode || "",
+    myUserId: "",
+    ownerProfile: null,
+    partnerProfile: null,
     error:
       message ||
       "Chưa kết nối phòng chung. Dữ liệu đang ở bộ nhớ tạm của phiên hiện tại cho đến khi bạn đăng nhập và ghép cặp.",
@@ -183,7 +225,11 @@ async function upsertRoomState(client, roomUuid, payload) {
 }
 
 async function seedRoomStateIfEmpty(client, roomUuid) {
-  const seed = remote.draftState || currentState() || createDefaultState();
+  const meta = currentMeta();
+  const canReuseDraft =
+    !!remote.draftState ||
+    (meta?.status === "draft" && !String(meta?.roomId || "").trim());
+  const seed = canReuseDraft ? remote.draftState || currentState() || createDefaultState() : createDefaultState();
   const payload = wrapRemotePayload(seed);
   await upsertRoomState(client, roomUuid, payload);
   remote.lastSeenUpdatedAt = Math.max(remote.lastSeenUpdatedAt, Number(payload.updatedAt || 0));
@@ -254,6 +300,7 @@ async function connectToRoomByCode(client, code) {
 
   remote.roomUuid = String(roomRow.id || "");
   remote.roomCode = sanitizeRoomCode(roomRow.code || code);
+  const memberProfiles = await resolveRoomMemberProfiles(client, roomRow);
 
   let stateRow = await fetchRoomStateRow(client, remote.roomUuid);
   if (!stateRow) {
@@ -277,6 +324,9 @@ async function connectToRoomByCode(client, code) {
     loading: false,
     status: "synced",
     roomId: remote.roomCode,
+    myUserId: String(user?.id || ""),
+    ownerProfile: memberProfiles.ownerProfile,
+    partnerProfile: memberProfiles.partnerProfile,
     error: "",
     source: "supabase-postgres",
   });
@@ -383,6 +433,14 @@ export const lingoActions = {
       draft.settings.startDate = typeof startDate === "string" ? startDate : "";
     });
   },
+  setAuthPanelMode(mode) {
+    return updateState((draft) => {
+      draft.ui = draft.ui && typeof draft.ui === "object" ? draft.ui : {};
+      if (mode === "standard" || mode === "ultra_minimal") {
+        draft.ui.authPanelMode = mode;
+      }
+    });
+  },
   upsertEvent(input) {
     return updateState((draft) => {
       draft.events = Array.isArray(draft.events) ? draft.events : [];
@@ -470,6 +528,9 @@ export async function initLingoSharedStateBridge() {
       loading: false,
       status: "error",
       roomId: remote.roomCode || "",
+      myUserId: "",
+      ownerProfile: null,
+      partnerProfile: null,
       source: "supabase-postgres",
       error: "Tính năng lưu dữ liệu tạm thời chưa sẵn sàng.",
     });
@@ -495,6 +556,9 @@ export async function initLingoSharedStateBridge() {
           loading: false,
           status: "draft",
           roomId: "",
+          myUserId: "",
+          ownerProfile: null,
+          partnerProfile: null,
           source: "supabase-postgres",
           error: "Chưa xác định được phòng dữ liệu. Hãy đăng nhập + ghép cặp hoặc mở link với ?room=CODE6KYTU",
         });
@@ -516,6 +580,9 @@ export async function initLingoSharedStateBridge() {
         loading: false,
         status: "error",
         roomId: remote.roomCode || "",
+        myUserId: "",
+        ownerProfile: null,
+        partnerProfile: null,
         source: "supabase-postgres",
         error: friendlySupabaseError(err, "Không thể khởi tạo kết nối dữ liệu."),
       });
@@ -537,6 +604,12 @@ export function destroyLingoSharedStateBridge() {
   remote.channel = null;
   remote.roomUuid = "";
   remote.roomCode = "";
+  setMeta({
+    roomId: "",
+    myUserId: "",
+    ownerProfile: null,
+    partnerProfile: null,
+  });
   remote.readyResolve = null;
   remote.inited = false;
   remote.initPromise = null;

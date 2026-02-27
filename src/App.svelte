@@ -286,6 +286,26 @@
         {/if}
 
         {#if canShowMainContent}
+          <div class="pinterest-tile lg:hidden">
+            <section class="card rounded-3xl p-3 sm:p-4" aria-label="Kết nối & cài đặt">
+              <div class="mb-3">
+                <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Điều khiển nhanh</p>
+                <h3 class="text-base font-bold leading-tight text-[color:var(--ink)]">Kết nối & cài đặt</h3>
+              </div>
+              <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                <button
+                  class={`btn text-sm w-full ${hasRoom ? "btn-soft" : "btn-primary"}`}
+                  type="button"
+                  on:click={openPairing}
+                >
+                  {hasRoom ? `Phòng ${roomId}` : "Kết nối cặp đôi"}
+                </button>
+                <button class="btn btn-soft text-sm w-full" type="button" on:click={openSettings}>Cài đặt</button>
+                <button class="btn btn-primary text-sm w-full" type="button" on:click={() => openWizard(false)}>Wizard nhanh</button>
+              </div>
+            </section>
+          </div>
+
           <div class="pinterest-tile">
             <TimerSection state={$lingoState} now={$lingoNow} />
           </div>
@@ -295,7 +315,7 @@
           </div>
 
           <div class="pinterest-tile">
-            <ProfilesSection state={$lingoState} now={$lingoNow} on:quickedit={openSettings} />
+            <ProfilesSection state={$lingoState} meta={$lingoMeta} now={$lingoNow} on:quickedit={openSettings} />
           </div>
 
           <div class="pinterest-tile">
@@ -303,7 +323,11 @@
           </div>
 
           <div class="pinterest-tile space-y-4">
-            <section class="card rounded-3xl p-3 sm:p-4" aria-label="Tác vụ nhanh">
+            <section class="card rounded-3xl p-3 sm:p-4 hidden lg:block" aria-label="Kết nối & cài đặt">
+              <div class="mb-3">
+                <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Điều khiển nhanh</p>
+                <h3 class="text-base font-bold leading-tight text-[color:var(--ink)]">Kết nối & cài đặt</h3>
+              </div>
               <div class="grid grid-cols-1 gap-2 sm:grid-cols-3 lg:grid-cols-1">
                 <button
                   class={`btn text-sm w-full ${hasRoom ? "btn-soft" : "btn-primary"}`}
@@ -401,7 +425,6 @@
   }
 
   .pinterest-tile {
-    display: block;
     margin-bottom: 1rem;
     break-inside: avoid;
     -webkit-column-break-inside: avoid;

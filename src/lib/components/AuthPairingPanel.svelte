@@ -5,6 +5,7 @@
     getCurrentAuthUser,
     getEnabledAuthProviders,
     getMyPairRoom,
+    getMyUserProfile,
     getSupabaseClient,
     getSupabaseConfigError,
     isSchemaMissingError,
@@ -12,9 +13,14 @@
     joinPairRoom,
     mapRoomRowToDto,
     sanitizeRoomCode,
+    sanitizeUsername,
+    signInWithUsernamePassword,
     signInWithProvider,
+    signUpWithUsernamePassword,
     signOutAuth,
+    upsertMyUserProfile,
   } from "../lingo/supabaseClient.js";
+  import { fallbackFlamingoAvatar, parseDate, resizeAvatarFile } from "../lingo/utils.js";
 
   export let currentRoomId = "";
   export let syncStatus = "connecting";
@@ -23,6 +29,7 @@
   export let open = false;
 
   const dispatch = createEventDispatcher();
+  const fallbackAvatar = fallbackFlamingoAvatar(160);
 
   let loading = true;
   let authBusy = false;
@@ -40,6 +47,26 @@
   let autoPairRequestedFromQuery = false;
   let authSubscription = null;
   let detailsExpanded = false;
+  let credentialModalOpen = false;
+  let credentialMode = "signin";
+  let loginUsername = "";
+  let loginPassword = "";
+  let loginPasswordConfirm = "";
+  let myProfile = null;
+  let profileModalOpen = false;
+  let profileBusy = false;
+  let profilePromptedForUserId = "";
+  let profileDraft = {
+    name: "",
+    birthday: "",
+    gender: "khong_tiet_lo",
+    avatarUrlInput: "",
+    uploadedAvatarData: "",
+    useDefault: true,
+    existingAvatarUrl: "",
+  };
+
+  const SHOW_PROVIDER_LOGIN = false;
 
   function emitToast(message) {
     if (!message) return;
@@ -52,6 +79,7 @@
 
   function providerIcon(id) {
     const k = String(id || "").toLowerCase();
+    if (k === "email" || k === "supabase") return "👤";
     if (k === "instagram") return "📸";
     if (k === "facebook") return "📘";
     if (k === "google") return "🔎";
@@ -64,6 +92,7 @@
   function providerName(id, fallback = "") {
     const k = String(id || "").toLowerCase();
     if (fallback) return fallback;
+    if (k === "email" || k === "supabase") return "Tài khoản";
     if (k === "instagram") return "Instagram";
     if (k === "facebook") return "Facebook";
     if (k === "google") return "Google";
@@ -123,6 +152,105 @@
     infoText = "";
   }
 
+  function profileFromRow(row, fallbackUser = null) {
+    const fallbackName = sanitizeUsername(fallbackUser?.username || "") || "user";
+    return {
+      name: String(row?.name || fallbackName).trim(),
+      birthday: String(row?.birthday || "").trim(),
+      gender: ["nam", "nu", "khac", "khong_tiet_lo"].includes(row?.gender) ? row.gender : "khong_tiet_lo",
+      avatarUrl: String(row?.avatarUrl || "").trim(),
+    };
+  }
+
+  function hydrateProfileDraft(profile) {
+    profileDraft = {
+      name: String(profile?.name || "").trim(),
+      birthday: String(profile?.birthday || "").trim(),
+      gender: ["nam", "nu", "khac", "khong_tiet_lo"].includes(profile?.gender) ? profile.gender : "khong_tiet_lo",
+      avatarUrlInput: String(profile?.avatarUrl || "").trim(),
+      uploadedAvatarData: "",
+      useDefault: !String(profile?.avatarUrl || "").trim(),
+      existingAvatarUrl: String(profile?.avatarUrl || "").trim(),
+    };
+  }
+
+  function openProfileModal(options = {}) {
+    if (!me) return;
+    if (!options.keepMessages) clearMessages();
+    const base = myProfile || profileFromRow(null, me);
+    hydrateProfileDraft(base);
+    profileModalOpen = true;
+    if (options.required) {
+      infoText = "Vui lòng hoàn tất hồ sơ trước khi tạo hoặc tham gia phòng.";
+    }
+  }
+
+  function closeProfileModal() {
+    if (profileBusy) return;
+    profileModalOpen = false;
+  }
+
+  function composeProfilePayload() {
+    const name = String(profileDraft.name || "").trim();
+    const birthday = String(profileDraft.birthday || "").trim();
+    const gender = profileDraft.gender || "khong_tiet_lo";
+    const avatarUrl = profileDraft.useDefault
+      ? ""
+      : String(profileDraft.uploadedAvatarData || profileDraft.avatarUrlInput || profileDraft.existingAvatarUrl || "").trim();
+
+    if (!name) throw new Error("Vui lòng nhập tên hiển thị.");
+    if (!birthday || !parseDate(birthday)) throw new Error("Ngày sinh không hợp lệ.");
+
+    return {
+      name,
+      birthday,
+      gender,
+      avatarUrl,
+    };
+  }
+
+  async function onProfileAvatarFile(file) {
+    if (!file) return;
+    try {
+      const data = await resizeAvatarFile(file, 320);
+      profileDraft.uploadedAvatarData = data || "";
+      profileDraft.useDefault = false;
+    } catch (err) {
+      errorText = err?.message || "Không thể xử lý ảnh.";
+    }
+  }
+
+  function onProfileImageError(event) {
+    if (event?.currentTarget) event.currentTarget.src = fallbackAvatar;
+  }
+
+  async function saveMyProfile() {
+    if (!me || profileBusy) return;
+    profileBusy = true;
+    errorText = "";
+    try {
+      const payload = composeProfilePayload();
+      const client = getSupabaseClient();
+      const row = await upsertMyUserProfile(payload, client);
+      myProfile = profileFromRow(row, me);
+      profileModalOpen = false;
+      emitToast("Đã lưu hồ sơ cá nhân.");
+      if (pendingAutoPairAfterAuth && hasStartDate && !room) {
+        await createPairCode({ auto: true, keepInfo: false });
+      } else if (room?.code) {
+        reconnectCurrentRoom();
+      }
+    } catch (err) {
+      errorText = toErrorMessage(err, "Không thể lưu hồ sơ.");
+    } finally {
+      profileBusy = false;
+    }
+  }
+
+  function hasValidProfile() {
+    return !!(myProfile?.name && myProfile?.birthday && parseDate(myProfile.birthday));
+  }
+
   async function refreshAuthPairState() {
     loading = true;
     errorText = "";
@@ -144,6 +272,8 @@
       me = await getCurrentAuthUser(client);
 
       if (me) {
+        const profileRow = await getMyUserProfile(client).catch(() => null);
+        myProfile = profileFromRow(profileRow, me);
         const roomRow = await getMyPairRoom(client).catch((err) => {
           if (String(err?.message || "").includes("0 rows")) return null;
           throw err;
@@ -151,6 +281,7 @@
         room = mapRoomRowToDto(roomRow, me.id);
       } else {
         room = null;
+        myProfile = null;
       }
 
       if (room?.code) {
@@ -166,6 +297,13 @@
   }
 
   function openProviderPicker(options = {}) {
+    if (!SHOW_PROVIDER_LOGIN) {
+      openCredentialModal({
+        mode: "signin",
+        autoPair: !!options.autoPair,
+      });
+      return;
+    }
     const cfgErr = getSupabaseConfigError();
     if (cfgErr) {
       errorText = "Tính năng đăng nhập tạm thời chưa sẵn sàng.";
@@ -185,14 +323,123 @@
     providerPickerOpen = false;
   }
 
-  function requestClose() {
-    if (authBusy && providerPickerOpen) return;
+  function openCredentialModal(options = {}) {
+    const cfgErr = getSupabaseConfigError();
+    if (cfgErr) {
+      errorText = "Tính năng đăng nhập tạm thời chưa sẵn sàng.";
+      return;
+    }
     providerPickerOpen = false;
+    if (!options.keepMessages) {
+      clearMessages();
+    }
+    credentialMode = options.mode === "signup" ? "signup" : "signin";
+    credentialModalOpen = true;
+    if (options.autoPair) pendingAutoPairAfterAuth = true;
+    if (options.clearPassword !== false) {
+      loginPassword = "";
+      loginPasswordConfirm = "";
+    }
+    if (options.focusUsername && !loginUsername) {
+      loginUsername = "";
+    }
+  }
+
+  function closeCredentialModal() {
+    if (authBusy) return;
+    credentialModalOpen = false;
+  }
+
+  function resetCredentialInputs() {
+    loginPassword = "";
+    loginPasswordConfirm = "";
+  }
+
+  async function submitCredentialAuth() {
+    if (authBusy) return;
+    clearMessages();
+
+    const username = sanitizeUsername(loginUsername);
+    const password = String(loginPassword || "");
+    const confirm = String(loginPasswordConfirm || "");
+
+    if (!username) {
+      errorText = "Vui lòng nhập tên đăng nhập (chỉ gồm chữ thường, số, dấu chấm, gạch dưới hoặc gạch ngang).";
+      return;
+    }
+    if (password.length < 6) {
+      errorText = "Mật khẩu cần ít nhất 6 ký tự.";
+      return;
+    }
+    if (credentialMode === "signup" && password !== confirm) {
+      errorText = "Mật khẩu xác nhận chưa khớp.";
+      return;
+    }
+
+    authBusy = true;
+    try {
+      const client = getSupabaseClient();
+
+      if (credentialMode === "signup") {
+        const data = await signUpWithUsernamePassword({ username, password }, client);
+        if (data?.needsEmailConfirmation) {
+          infoText =
+            "Tài khoản đã được tạo nhưng Supabase đang bật xác nhận email. Với chế độ đăng nhập tên đăng nhập, hãy tắt Email Confirmations trong Supabase Auth rồi thử lại.";
+        } else {
+          infoText = "Đã tạo tài khoản và đăng nhập thành công.";
+          emitToast("Đã tạo tài khoản.");
+        }
+      } else {
+        await signInWithUsernamePassword({ username, password }, client);
+        infoText = "Đăng nhập thành công.";
+        emitToast("Đăng nhập thành công.");
+      }
+
+      loginUsername = username;
+      resetCredentialInputs();
+      credentialModalOpen = false;
+      await refreshAuthPairState();
+
+      if (!hasValidProfile()) {
+        openProfileModal({ required: true, keepMessages: true });
+      } else if (pendingAutoPairAfterAuth && hasStartDate && !room) {
+        await createPairCode({ auto: true, keepInfo: false });
+      }
+    } catch (err) {
+      const msg = String(err?.message || "");
+      const lower = msg.toLowerCase();
+      if (
+        lower.includes("invalid login credentials") ||
+        lower.includes("email not confirmed") ||
+        lower.includes("invalid_credentials")
+      ) {
+        errorText = "Tên đăng nhập hoặc mật khẩu chưa đúng.";
+      } else if (lower.includes("user already registered")) {
+        errorText = "Tên đăng nhập này đã tồn tại.";
+      } else if (lower.includes("password should be at least")) {
+        errorText = "Mật khẩu cần ít nhất 6 ký tự.";
+      } else {
+        errorText = toErrorMessage(err, "Không thể đăng nhập.");
+      }
+    } finally {
+      authBusy = false;
+    }
+  }
+
+  function requestClose() {
+    if (authBusy && (providerPickerOpen || credentialModalOpen)) return;
+    providerPickerOpen = false;
+    credentialModalOpen = false;
     dispatch("close");
   }
 
   function handleKeydown(event) {
     if (event.key !== "Escape") return;
+    if (credentialModalOpen) {
+      event.preventDefault();
+      closeCredentialModal();
+      return;
+    }
     if (providerPickerOpen) {
       event.preventDefault();
       closeProviderPicker();
@@ -318,9 +565,12 @@
       await signOutAuth(client);
       me = null;
       room = null;
+      myProfile = null;
       joinCode = "";
       pendingAutoPairAfterAuth = false;
       autoPairRequestedFromQuery = false;
+      profileModalOpen = false;
+      profilePromptedForUserId = "";
       infoText = "Đã đăng xuất.";
       emitToast("Đã đăng xuất.");
       dispatch("refreshroom", { clearRoomQuery: true });
@@ -331,6 +581,14 @@
     }
   }
 
+  function roomUserPayload() {
+    return {
+      ...me,
+      username: myProfile?.name || me?.username || "user",
+      avatarUrl: myProfile?.avatarUrl || "",
+    };
+  }
+
   async function createPairCode(options = {}) {
     if (pairBusy || authBusy) return null;
 
@@ -338,7 +596,7 @@
       if (options.auto) {
         infoText = "Đã lưu Wizard. Hãy đăng nhập để hệ thống tự tạo mã ghép cặp.";
         emitToast("Đăng nhập để tạo mã ghép cặp.");
-        openProviderPicker({ reason: "wizard-auto", autoPair: true });
+        openCredentialModal({ mode: "signin", autoPair: true });
         return null;
       }
       errorText = "Vui lòng đăng nhập trước.";
@@ -350,6 +608,11 @@
       dispatch("openwizard");
       return null;
     }
+    if (!hasValidProfile()) {
+      errorText = "Vui lòng cập nhật hồ sơ cá nhân trước khi tạo phòng.";
+      openProfileModal({ required: true, keepMessages: true });
+      return null;
+    }
 
     pairBusy = true;
     errorText = "";
@@ -357,7 +620,7 @@
 
     try {
       const client = getSupabaseClient();
-      const row = await createPairRoom(me, client);
+      const row = await createPairRoom(roomUserPayload(), client);
       const nextRoom = mapRoomRowToDto(row, me.id);
       if (!nextRoom?.code) throw new Error("Không nhận được mã ghép cặp.");
 
@@ -400,13 +663,18 @@
       errorText = "Vui lòng đăng nhập trước.";
       return;
     }
+    if (!hasValidProfile()) {
+      errorText = "Vui lòng cập nhật hồ sơ cá nhân trước khi tham gia phòng.";
+      openProfileModal({ required: true, keepMessages: true });
+      return;
+    }
 
     pairBusy = true;
     clearMessages();
 
     try {
       const client = getSupabaseClient();
-      const row = await joinPairRoom(code, me, client);
+      const row = await joinPairRoom(code, roomUserPayload(), client);
       const nextRoom = mapRoomRowToDto(row, me.id);
       if (!nextRoom) throw new Error("Không thể nhận thông tin phòng sau khi ghép cặp.");
 
@@ -484,10 +752,14 @@
     }
 
     if (!me) {
-      infoText =
-        "Đã lưu Wizard. Chọn nhà cung cấp để đăng nhập, hệ thống sẽ tự tạo mã ghép cặp sau khi quay lại.";
-      emitToast("Chọn cách đăng nhập để tạo mã ghép cặp.");
-      openProviderPicker({ reason: "wizard-auto", autoPair: true });
+      infoText = "Đã lưu Wizard. Đăng nhập bằng tên đăng nhập và mật khẩu để hệ thống tự tạo mã ghép cặp.";
+      emitToast("Đăng nhập để tạo mã ghép cặp.");
+      openCredentialModal({ mode: "signin", autoPair: true });
+      return;
+    }
+    if (!hasValidProfile()) {
+      infoText = "Hãy cập nhật hồ sơ cá nhân trước khi tạo mã ghép cặp.";
+      openProfileModal({ required: true, keepMessages: true });
       return;
     }
 
@@ -518,8 +790,8 @@
     if (autoPairRequestedFromQuery && me && hasStartDate && !room) {
       await createPairCode({ auto: true, keepInfo: false });
     } else if (autoPairRequestedFromQuery && !me) {
-      infoText = "Đăng nhập chưa hoàn tất. Hãy chọn lại nhà cung cấp.";
-      openProviderPicker({ reason: "auth-return", autoPair: true });
+      infoText = "Đăng nhập chưa hoàn tất. Vui lòng nhập lại tên đăng nhập và mật khẩu.";
+      openCredentialModal({ mode: "signin", autoPair: true });
     }
   });
 
@@ -535,7 +807,29 @@
   $: needsConnect = !!effectiveRoomCode && currentRoomId !== effectiveRoomCode;
   $: providerSummary = providers.length ? providers.map((p) => providerName(p.id, p.name)).join(", ") : "";
   $: canShowProviderTrigger = authConfigured && providers.length > 0 && !me;
+  $: canUsePasswordLogin = authConfigured && !me;
+  $: displayAccountName = myProfile?.name || me?.username || "user";
+  $: profileAvatarPreview = profileDraft.useDefault
+    ? fallbackAvatar
+    : (profileDraft.uploadedAvatarData || profileDraft.avatarUrlInput?.trim() || profileDraft.existingAvatarUrl || fallbackAvatar);
+  $: if (!open || !me?.id || hasValidProfile()) {
+    profilePromptedForUserId = "";
+  }
+  $: if (
+    open &&
+    me?.id &&
+    !hasValidProfile() &&
+    !profileModalOpen &&
+    !authBusy &&
+    !profileBusy &&
+    profilePromptedForUserId !== me.id
+  ) {
+    profilePromptedForUserId = me.id;
+    openProfileModal({ required: true, keepMessages: true });
+  }
   $: if (!open && providerPickerOpen) providerPickerOpen = false;
+  $: if (!open && credentialModalOpen) credentialModalOpen = false;
+  $: if (!open && profileModalOpen) profileModalOpen = false;
 </script>
 
 <svelte:window on:keydown={handleKeydown} />
@@ -572,8 +866,8 @@
         <button
           class={`btn text-sm w-full sm:w-auto ${me ? "btn-soft" : "btn-primary"}`}
           type="button"
-          on:click={me ? logout : () => openProviderPicker({ reason: "manual-login" })}
-          disabled={authBusy || pairBusy || (!me && !canShowProviderTrigger)}
+          on:click={me ? logout : () => openCredentialModal({ mode: "signin" })}
+          disabled={authBusy || pairBusy || (!me && !canUsePasswordLogin)}
         >
           {#if me}
             {authBusy ? "Đang thoát..." : "Đăng xuất"}
@@ -593,7 +887,7 @@
               {#if loading}
                 Đang kiểm tra
               {:else if me}
-                @{me.username}
+                {displayAccountName}
               {:else}
                 Chưa đăng nhập
               {/if}
@@ -632,8 +926,8 @@
             <button
               class={`btn text-sm ${me ? "btn-soft" : "btn-primary"}`}
               type="button"
-              on:click={me ? logout : () => openProviderPicker({ reason: "manual-login" })}
-              disabled={authBusy || pairBusy || (!me && !canShowProviderTrigger)}
+              on:click={me ? logout : () => openCredentialModal({ mode: "signin" })}
+              disabled={authBusy || pairBusy || (!me && !canUsePasswordLogin)}
             >
               {#if me}
                 {authBusy ? "Đang thoát..." : "Đăng xuất"}
@@ -693,7 +987,7 @@
                   {providerIcon(me.provider)}
                 </div>
                 <div class="min-w-0">
-                  <p class="text-sm font-semibold text-[color:var(--ink)] truncate">@{me.username}</p>
+                  <p class="text-sm font-semibold text-[color:var(--ink)] truncate">{displayAccountName}</p>
                   <p class="text-xs text-[color:var(--ink2)]">{providerName(me.provider)}</p>
                 </div>
               </div>
@@ -701,10 +995,13 @@
                 <button
                   class="btn btn-soft text-sm"
                   type="button"
-                  on:click={() => openProviderPicker({ reason: "switch-account" })}
-                  disabled={authBusy || pairBusy || !providers.length}
+                  on:click={() => openCredentialModal({ mode: "signin" })}
+                  disabled={authBusy || pairBusy}
                 >
                   Đổi tài khoản
+                </button>
+                <button class="btn btn-soft text-sm" type="button" on:click={() => openProfileModal({ keepMessages: true })} disabled={authBusy || pairBusy}>
+                  Cập nhật hồ sơ
                 </button>
               </div>
             {:else}
@@ -752,7 +1049,7 @@
             {#if loading}
               Đang kiểm tra phiên đăng nhập...
             {:else if me}
-              @{me.username}
+              {displayAccountName}
             {:else}
               Chưa đăng nhập
             {/if}
@@ -784,10 +1081,13 @@
           <button
             class="btn btn-soft text-sm"
             type="button"
-            on:click={() => openProviderPicker({ reason: "switch-account" })}
-            disabled={authBusy || pairBusy || !providers.length}
+            on:click={() => openCredentialModal({ mode: "signin" })}
+            disabled={authBusy || pairBusy}
           >
             Đổi tài khoản
+          </button>
+          <button class="btn btn-soft text-sm" type="button" on:click={() => openProfileModal({ keepMessages: true })} disabled={authBusy || pairBusy}>
+            Cập nhật hồ sơ
           </button>
           <button class="btn btn-soft text-sm" type="button" on:click={logout} disabled={authBusy || pairBusy}>
             {authBusy ? "Đang thoát..." : "Đăng xuất"}
@@ -795,14 +1095,14 @@
         </div>
       {:else}
         <div class="mt-3 space-y-2">
-          {#if !authConfigured || !providers.length}
+          {#if !authConfigured}
             <p class="rounded-xl border border-amber-200/80 bg-amber-50 px-3 py-2 text-sm text-amber-700">
               Tính năng đăng nhập hiện chưa sẵn sàng.
             </p>
           {/if}
-          {#if canShowProviderTrigger}
-            <button class="btn btn-primary text-sm w-full sm:w-auto" type="button" on:click={() => openProviderPicker({ reason: "account-card" })}>
-              Chọn cách đăng nhập
+          {#if canUsePasswordLogin}
+            <button class="btn btn-primary text-sm w-full sm:w-auto" type="button" on:click={() => openCredentialModal({ mode: "signin" })}>
+              Đăng nhập
             </button>
           {/if}
         </div>
@@ -896,6 +1196,242 @@
   </div>
 </div>
 
+<div class={`modal ${credentialModalOpen ? "open" : ""}`} aria-hidden={!credentialModalOpen} on:click|self={closeCredentialModal}>
+  <div
+    class="modal-card"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="credentialAuthTitle"
+    tabindex="-1"
+    style="max-width: 34rem;"
+  >
+    <div class="flex items-center justify-between border-b border-pink-100/70 px-4 py-3 sm:px-5">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Tài khoản</p>
+        <h3 id="credentialAuthTitle" class="text-lg font-bold text-[color:var(--ink)]">
+          {credentialMode === "signup" ? "Tạo tài khoản" : "Đăng nhập"}
+        </h3>
+      </div>
+      <button type="button" class="btn btn-soft text-sm" on:click={closeCredentialModal} disabled={authBusy}>Đóng</button>
+    </div>
+
+    <div class="px-4 py-4 sm:px-5">
+      <form class="space-y-3" on:submit|preventDefault={submitCredentialAuth}>
+        <div class="rounded-2xl border border-white/70 bg-white/70 p-4">
+          <div class="flex items-center gap-2 text-xs">
+            <button
+              type="button"
+              class={`pill ${credentialMode === "signin" ? "!bg-pink-100 !text-pink-700" : ""}`}
+              on:click={() => (credentialMode = "signin")}
+              disabled={authBusy}
+            >
+              Đăng nhập
+            </button>
+            <button
+              type="button"
+              class={`pill ${credentialMode === "signup" ? "!bg-pink-100 !text-pink-700" : ""}`}
+              on:click={() => (credentialMode = "signup")}
+              disabled={authBusy}
+            >
+              Tạo tài khoản
+            </button>
+            {#if pendingAutoPairAfterAuth}
+              <span class="pill">Tự tạo mã sau đăng nhập</span>
+            {/if}
+          </div>
+
+          <p class="mt-2 text-sm text-[color:var(--ink2)]">
+            {#if credentialMode === "signup"}
+              Tạo tài khoản bằng tên đăng nhập và mật khẩu để dùng chung phòng cặp đôi.
+            {:else}
+              Nhập tên đăng nhập và mật khẩu để tiếp tục ghép cặp.
+            {/if}
+          </p>
+
+          <div class="mt-3">
+            <label class="label" for="cred_username">Tên đăng nhập</label>
+            <input
+              id="cred_username"
+              class="field mt-1 text-sm"
+              type="text"
+              placeholder="ví dụ: hieu_duong"
+              autocomplete="username"
+              maxlength="32"
+              bind:value={loginUsername}
+              on:input={(e) => (loginUsername = sanitizeUsername(e.currentTarget.value))}
+              disabled={authBusy}
+            />
+            <p class="mt-1 text-xs text-[color:var(--ink2)]">Chỉ dùng chữ thường, số, dấu chấm, gạch dưới hoặc gạch ngang.</p>
+          </div>
+
+          <div class="mt-3">
+            <label class="label" for="cred_password">Mật khẩu</label>
+            <input
+              id="cred_password"
+              class="field mt-1 text-sm"
+              type="password"
+              placeholder="Ít nhất 6 ký tự"
+              autocomplete={credentialMode === "signup" ? "new-password" : "current-password"}
+              bind:value={loginPassword}
+              disabled={authBusy}
+            />
+          </div>
+
+          {#if credentialMode === "signup"}
+            <div class="mt-3">
+              <label class="label" for="cred_password_confirm">Nhập lại mật khẩu</label>
+              <input
+                id="cred_password_confirm"
+                class="field mt-1 text-sm"
+                type="password"
+                placeholder="Nhập lại mật khẩu"
+                autocomplete="new-password"
+                bind:value={loginPasswordConfirm}
+                disabled={authBusy}
+              />
+            </div>
+          {/if}
+
+          <div class="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <button class="btn btn-primary text-sm w-full" type="submit" disabled={authBusy}>
+              {#if authBusy}
+                {credentialMode === "signup" ? "Đang tạo tài khoản..." : "Đang đăng nhập..."}
+              {:else}
+                {credentialMode === "signup" ? "Tạo tài khoản" : "Đăng nhập"}
+              {/if}
+            </button>
+            <button
+              class="btn btn-soft text-sm w-full"
+              type="button"
+              on:click={() => {
+                credentialMode = credentialMode === "signup" ? "signin" : "signup";
+                errorText = "";
+              }}
+              disabled={authBusy}
+            >
+              {credentialMode === "signup" ? "Đã có tài khoản" : "Tạo tài khoản mới"}
+            </button>
+          </div>
+        </div>
+
+        {#if errorText}
+          <p class="rounded-xl border border-rose-200/80 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-600">{errorText}</p>
+        {/if}
+        {#if infoText}
+          <p class="rounded-xl border border-sky-200/70 bg-sky-50/80 px-3 py-2 text-sm text-sky-700">{infoText}</p>
+        {/if}
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class={`modal ${profileModalOpen ? "open" : ""}`} aria-hidden={!profileModalOpen} on:click|self={closeProfileModal}>
+  <div
+    class="modal-card"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="profileModalTitle"
+    tabindex="-1"
+    style="max-width: 38rem;"
+  >
+    <div class="flex items-center justify-between border-b border-pink-100/70 px-4 py-3 sm:px-5">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Hồ sơ cá nhân</p>
+        <h3 id="profileModalTitle" class="text-lg font-bold text-[color:var(--ink)]">Thông tin đăng ký</h3>
+      </div>
+      <button type="button" class="btn btn-soft text-sm" on:click={closeProfileModal} disabled={profileBusy}>Đóng</button>
+    </div>
+
+    <div class="px-4 py-4 sm:px-5">
+      <form class="space-y-3" on:submit|preventDefault={saveMyProfile}>
+        <div class="rounded-2xl border border-white/70 bg-white/70 p-4">
+          <div class="flex items-start gap-3">
+            <img
+              src={profileAvatarPreview}
+              alt="Avatar cá nhân"
+              class="h-20 w-20 rounded-2xl object-cover border border-pink-200/70 bg-white"
+              on:error={onProfileImageError}
+            />
+            <div class="min-w-0 flex-1">
+              <p class="text-sm font-semibold text-[color:var(--ink)]">Thông tin này sẽ được dùng khi bạn đăng nhập</p>
+              <p class="mt-1 text-xs text-[color:var(--ink2)]">Tên, ngày sinh, giới tính và avatar sẽ tự hiện trong hồ sơ cặp đôi.</p>
+              <div class="mt-2 flex flex-wrap gap-2">
+                <button class="btn btn-soft text-sm" type="button" on:click={() => (profileDraft.useDefault = true)} disabled={profileBusy}>
+                  Dùng avatar mặc định
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div class="sm:col-span-2">
+              <label class="label" for="reg_name">Tên hiển thị</label>
+              <input id="reg_name" class="field mt-1 text-sm" type="text" maxlength="60" bind:value={profileDraft.name} disabled={profileBusy} />
+            </div>
+
+            <div>
+              <label class="label" for="reg_birthday">Ngày sinh</label>
+              <input id="reg_birthday" class="field mt-1 text-sm" type="date" bind:value={profileDraft.birthday} disabled={profileBusy} />
+            </div>
+
+            <div>
+              <label class="label" for="reg_gender">Giới tính</label>
+              <select id="reg_gender" class="field mt-1 text-sm" bind:value={profileDraft.gender} disabled={profileBusy}>
+                <option value="nam">Nam</option>
+                <option value="nu">Nữ</option>
+                <option value="khac">Khác</option>
+                <option value="khong_tiet_lo">Không tiết lộ</option>
+              </select>
+            </div>
+
+            <div class="sm:col-span-2">
+              <label class="label" for="reg_avatar_url">Avatar URL (tuỳ chọn)</label>
+              <input
+                id="reg_avatar_url"
+                class="field mt-1 text-sm"
+                type="url"
+                placeholder="https://..."
+                bind:value={profileDraft.avatarUrlInput}
+                disabled={profileBusy}
+                on:input={() => {
+                  if (profileDraft.avatarUrlInput?.trim()) profileDraft.useDefault = false;
+                }}
+              />
+            </div>
+
+            <div class="sm:col-span-2">
+              <label class="label" for="reg_avatar_upload">Tải ảnh lên (tuỳ chọn)</label>
+              <input
+                id="reg_avatar_upload"
+                class="field mt-1 text-sm"
+                type="file"
+                accept="image/*"
+                disabled={profileBusy}
+                on:change={(e) => onProfileAvatarFile(e.currentTarget.files?.[0] || null)}
+              />
+            </div>
+          </div>
+        </div>
+
+        {#if errorText}
+          <p class="rounded-xl border border-rose-200/80 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-600">{errorText}</p>
+        {/if}
+        {#if infoText}
+          <p class="rounded-xl border border-sky-200/70 bg-sky-50/80 px-3 py-2 text-sm text-sky-700">{infoText}</p>
+        {/if}
+
+        <div class="flex justify-end gap-2">
+          <button class="btn btn-soft text-sm" type="button" on:click={closeProfileModal} disabled={profileBusy}>Để sau</button>
+          <button class="btn btn-primary text-sm" type="submit" disabled={profileBusy}>
+            {profileBusy ? "Đang lưu..." : "Lưu hồ sơ"}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{#if SHOW_PROVIDER_LOGIN}
 <div class={`modal ${providerPickerOpen ? "open" : ""}`} aria-hidden={!providerPickerOpen} on:click|self={closeProviderPicker}>
   <div
     class="modal-card"
@@ -968,3 +1504,4 @@
     </div>
   </div>
 </div>
+{/if}

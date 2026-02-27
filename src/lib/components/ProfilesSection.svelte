@@ -11,13 +11,24 @@
   } from "../lingo/utils.js";
 
   export let state;
+  export let meta = {};
   export let now = Date.now();
 
   const dispatch = createEventDispatcher();
   const fallbackAvatar = fallbackFlamingoAvatar(120);
 
+  function normalizeProfile(raw, fallbackName) {
+    const src = raw && typeof raw === "object" ? raw : {};
+    return {
+      name: String(src.name || "").trim() || fallbackName,
+      birthday: String(src.birthday || "").trim(),
+      gender: src.gender || "khong_tiet_lo",
+      avatarUrl: String(src.avatarUrl || "").trim(),
+    };
+  }
+
   function getAvatar(person) {
-    return person?.avatarUrl?.trim() || fallbackAvatar;
+    return person?.avatarUrl || fallbackAvatar;
   }
 
   function onImgError(event) {
@@ -25,9 +36,11 @@
   }
 
   $: today = new Date(now);
+  $: ownerRaw = meta?.ownerProfile || state?.couple?.personA || {};
+  $: partnerRaw = meta?.partnerProfile || state?.couple?.personB || {};
   $: people = [
-    { key: "personA", title: "Người 1", data: state?.couple?.personA || {} },
-    { key: "personB", title: "Người 2", data: state?.couple?.personB || {} },
+    { key: "owner", title: "Người tạo", data: normalizeProfile(ownerRaw, "Người tạo") },
+    { key: "partner", title: "Người tham gia", data: normalizeProfile(partnerRaw, "Người tham gia") },
   ].map((item) => {
     const birthday = parseDate(item.data?.birthday || "");
     const zodiac = getWesternZodiac(birthday);
@@ -47,9 +60,9 @@
     <div>
       <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Cặp đôi</p>
       <h2 class="text-lg sm:text-xl font-bold text-[color:var(--ink)]">Hồ sơ tình yêu của hai bạn</h2>
-      <p class="text-sm text-[color:var(--ink2)]">Tuổi, cung hoàng đạo, nguyên tố và avatar hồng hạc.</p>
+      <p class="text-sm text-[color:var(--ink2)]">Người tạo ở bên trái, người tham gia ở bên phải.</p>
     </div>
-    <button class="btn btn-soft text-sm" type="button" on:click={() => dispatch("quickedit")}>Sửa hồ sơ</button>
+    <button class="btn btn-soft text-sm" type="button" on:click={() => dispatch("quickedit")}>Sửa ngày bắt đầu</button>
   </div>
 
   <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">

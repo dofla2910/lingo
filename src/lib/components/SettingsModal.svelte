@@ -1,8 +1,6 @@
 <script>
   import { createEventDispatcher } from "svelte";
-  import PersonEditorCard from "./PersonEditorCard.svelte";
-  import { normalizePerson } from "../lingo/schema.js";
-  import { parseDate, parseDateTime, resizeAvatarFile } from "../lingo/utils.js";
+  import { parseDateTime } from "../lingo/utils.js";
 
   export let open = false;
   export let state;
@@ -13,46 +11,14 @@
 
   let startDate = "";
   let authPanelMode = "ultra_minimal";
-  let personA = emptyDraft();
-  let personB = emptyDraft();
   let errorText = "";
   let busy = false;
   let importInput;
   let lastHydratedSignature = "";
 
-  function emptyDraft() {
-    return {
-      name: "",
-      birthday: "",
-      gender: "khong_tiet_lo",
-      avatarUrlInput: "",
-      uploadedAvatarData: "",
-      existingAvatarUrl: "",
-      existingAvatarType: "default",
-      useDefault: true,
-    };
-  }
-
-  function toDraft(person) {
-    const p = normalizePerson(person || {}, "x");
-    const avatarUrlInput = p.avatarType === "url" ? (p.avatarSourceUrl || p.avatarUrl || "") : "";
-    return {
-      name: p.name || "",
-      birthday: p.birthday || "",
-      gender: p.gender || "khong_tiet_lo",
-      avatarUrlInput,
-      uploadedAvatarData: "",
-      existingAvatarUrl: p.avatarUrl || "",
-      existingAvatarType: p.avatarType || "default",
-      useDefault: p.avatarType === "default" || !p.avatarUrl,
-    };
-  }
-
   function hydrateFromState() {
     startDate = state?.settings?.startDate || "";
     authPanelMode = state?.ui?.authPanelMode === "standard" ? "standard" : "ultra_minimal";
-    personA = toDraft(state?.couple?.personA);
-    personB = toDraft(state?.couple?.personB);
     errorText = "";
   }
 
@@ -61,8 +27,6 @@
     return JSON.stringify({
       startDate: s?.settings?.startDate || "",
       authPanelMode: s?.ui?.authPanelMode || "ultra_minimal",
-      a: s?.couple?.personA || {},
-      b: s?.couple?.personB || {},
     });
   }
 
@@ -84,80 +48,15 @@
     if (event.key === "Escape") requestClose();
   }
 
-  async function onAvatarFile(which, file) {
-    if (!file) return;
-    try {
-      const data = await resizeAvatarFile(file, 320);
-      if (which === "a") {
-        personA.uploadedAvatarData = data || "";
-        personA.useDefault = false;
-      } else {
-        personB.uploadedAvatarData = data || "";
-        personB.useDefault = false;
-      }
-    } catch (err) {
-      errorText = err?.message || "Không thể xử lý ảnh.";
-    }
-  }
-
-  function composePerson(existing, draft, fallbackId) {
-    const prev = normalizePerson(existing || {}, fallbackId);
-    const out = {
-      ...prev,
-      name: String(draft.name || "").trim(),
-      birthday: String(draft.birthday || "").trim(),
-      gender: draft.gender || "khong_tiet_lo",
-    };
-
-    if (draft.useDefault) {
-      out.avatarType = "default";
-      out.avatarUrl = "";
-      out.avatarSourceUrl = "";
-      return out;
-    }
-    if (draft.uploadedAvatarData) {
-      out.avatarType = "upload";
-      out.avatarUrl = draft.uploadedAvatarData;
-      out.avatarSourceUrl = "";
-      return out;
-    }
-    const url = String(draft.avatarUrlInput || "").trim();
-    if (url) {
-      out.avatarType = "url";
-      out.avatarUrl = url;
-      out.avatarSourceUrl = url;
-      return out;
-    }
-    if (prev.avatarUrl) return out;
-    out.avatarType = "default";
-    out.avatarUrl = "";
-    out.avatarSourceUrl = "";
-    return out;
-  }
-
-  function validateForm() {
-    if (startDate && !parseDateTime(startDate)) {
-      throw new Error("Ngày bắt đầu yêu không hợp lệ.");
-    }
-    if (personA.birthday && !parseDate(personA.birthday)) {
-      throw new Error("Ngày sinh của Người 1 không hợp lệ.");
-    }
-    if (personB.birthday && !parseDate(personB.birthday)) {
-      throw new Error("Ngày sinh của Người 2 không hợp lệ.");
-    }
-  }
-
   async function save() {
     errorText = "";
     busy = true;
     try {
-      validateForm();
-      await actions.saveCoupleSettings({
-        startDate,
-        personA: composePerson(state?.couple?.personA, personA, "a"),
-        personB: composePerson(state?.couple?.personB, personB, "b"),
-        ui: { authPanelMode },
-      });
+      if (startDate && !parseDateTime(startDate)) {
+        throw new Error("Ngày bắt đầu yêu không hợp lệ.");
+      }
+      await actions.saveStartDate(startDate);
+      await actions.setAuthPanelMode(authPanelMode);
       toast("Đã lưu cài đặt.");
       dispatch("saved");
       dispatch("close");
@@ -185,7 +84,7 @@
     const file = event.currentTarget.files?.[0];
     event.currentTarget.value = "";
     if (!file) return;
-    const ok = confirm("Nhập JSON sẽ ghi đè dữ liệu hiện tại của hai bạn. Tiếp tục?");
+    const ok = confirm("Nhập JSON sẽ ghi đè dữ liệu hiện tại của phòng này. Tiếp tục?");
     if (!ok) return;
     try {
       const text = await file.text();
@@ -199,7 +98,7 @@
   }
 
   async function resetAll() {
-    const ok = confirm("Đặt lại toàn bộ dữ liệu Lingo của hai bạn?");
+    const ok = confirm("Đặt lại toàn bộ dữ liệu phòng hiện tại?");
     if (!ok) return;
     try {
       await actions.resetAll();
@@ -225,7 +124,7 @@
     <div class="flex items-center justify-between border-b border-pink-100/70 px-4 py-3 sm:px-5">
       <div>
         <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Cài đặt</p>
-        <h2 id="settingsTitle" class="text-lg font-bold text-[color:var(--ink)]">Cập nhật hồ sơ & ngày bắt đầu</h2>
+        <h2 id="settingsTitle" class="text-lg font-bold text-[color:var(--ink)]">Ngày bắt đầu & dữ liệu phòng</h2>
       </div>
       <button type="button" class="btn btn-soft text-sm" on:click={requestClose}>Đóng</button>
     </div>
@@ -235,7 +134,7 @@
         <label class="label" for="svelte_start_date">Ngày bắt đầu yêu</label>
         <input id="svelte_start_date" class="field mt-1 text-sm" type="datetime-local" bind:value={startDate} />
         <p class="mt-2 text-xs text-[color:var(--ink2)]">
-          Dữ liệu sẽ được lưu vào phòng chung hiện tại của hai bạn.
+          Áp dụng cho toàn bộ phòng hiện tại.
         </p>
       </div>
 
@@ -259,7 +158,7 @@
             />
             <span>
               <span class="block font-semibold text-[color:var(--ink)]">Siêu tối giản</span>
-              <span class="block text-xs text-[color:var(--ink2)]">Tập trung thao tác nhanh, ít nội dung.</span>
+              <span class="block text-xs text-[color:var(--ink2)]">Tập trung thao tác nhanh.</span>
             </span>
           </label>
 
@@ -279,25 +178,10 @@
             />
             <span>
               <span class="block font-semibold text-[color:var(--ink)]">Tiêu chuẩn</span>
-              <span class="block text-xs text-[color:var(--ink2)]">Hiển thị thêm hướng dẫn và thông tin ghép cặp.</span>
+              <span class="block text-xs text-[color:var(--ink2)]">Hiển thị thêm thông tin chi tiết.</span>
             </span>
           </label>
         </div>
-      </div>
-
-      <div class="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <PersonEditorCard
-          title="Người 1"
-          idPrefix="settings_a"
-          bind:draft={personA}
-          on:avatar-file={(e) => onAvatarFile("a", e.detail.file)}
-        />
-        <PersonEditorCard
-          title="Người 2"
-          idPrefix="settings_b"
-          bind:draft={personB}
-          on:avatar-file={(e) => onAvatarFile("b", e.detail.file)}
-        />
       </div>
 
       <div class="mt-4 rounded-2xl border border-white/70 bg-white/65 p-4">

@@ -31,6 +31,16 @@ create table if not exists public.lingo_room_states (
   updated_by uuid references auth.users(id) on delete set null
 );
 
+create table if not exists public.lingo_user_profiles (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  display_name text not null check (char_length(display_name) between 1 and 60),
+  birthday date,
+  gender text not null default 'khong_tiet_lo' check (gender in ('nam', 'nu', 'khac', 'khong_tiet_lo')),
+  avatar_url text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create or replace function public.lingo_touch_updated_at()
 returns trigger
 language plpgsql
@@ -51,8 +61,14 @@ create trigger trg_lingo_room_states_updated_at
 before update on public.lingo_room_states
 for each row execute function public.lingo_touch_updated_at();
 
+drop trigger if exists trg_lingo_user_profiles_updated_at on public.lingo_user_profiles;
+create trigger trg_lingo_user_profiles_updated_at
+before update on public.lingo_user_profiles
+for each row execute function public.lingo_touch_updated_at();
+
 alter table public.lingo_rooms enable row level security;
 alter table public.lingo_room_states enable row level security;
+alter table public.lingo_user_profiles enable row level security;
 
 -- Members can read only rooms they belong to
 drop policy if exists "lingo_rooms_select_members" on public.lingo_rooms;
@@ -114,6 +130,37 @@ with check (
       and (r.owner_user_id = auth.uid() or r.partner_user_id = auth.uid())
   )
 );
+
+-- User profile policies
+drop policy if exists "lingo_user_profiles_select_members" on public.lingo_user_profiles;
+create policy "lingo_user_profiles_select_members"
+on public.lingo_user_profiles
+for select
+to authenticated
+using (
+  user_id = auth.uid()
+  or exists (
+    select 1
+    from public.lingo_rooms r
+    where (r.owner_user_id = auth.uid() or r.partner_user_id = auth.uid())
+      and (r.owner_user_id = public.lingo_user_profiles.user_id or r.partner_user_id = public.lingo_user_profiles.user_id)
+  )
+);
+
+drop policy if exists "lingo_user_profiles_insert_own" on public.lingo_user_profiles;
+create policy "lingo_user_profiles_insert_own"
+on public.lingo_user_profiles
+for insert
+to authenticated
+with check (user_id = auth.uid());
+
+drop policy if exists "lingo_user_profiles_update_own" on public.lingo_user_profiles;
+create policy "lingo_user_profiles_update_own"
+on public.lingo_user_profiles
+for update
+to authenticated
+using (user_id = auth.uid())
+with check (user_id = auth.uid());
 
 create or replace function public.lingo_generate_code()
 returns text
@@ -280,7 +327,7 @@ $$;
 grant execute on function public.lingo_my_room() to authenticated;
 grant execute on function public.lingo_create_room(text, text, text) to authenticated;
 grant execute on function public.lingo_join_room(text, text, text, text) to authenticated;
+grant select, insert, update on table public.lingo_user_profiles to authenticated;
 
 -- Realtime (run once if not already enabled)
 alter publication supabase_realtime add table public.lingo_room_states;
-

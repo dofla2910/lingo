@@ -40,6 +40,41 @@ export function getEnabledAuthProviders() {
   return parseProviderList(PROVIDERS_RAW);
 }
 
+export function sanitizeUsername(value) {
+  const raw = String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "")
+    .replace(/[^a-z0-9._-]/g, "");
+  const noLeading = raw.replace(/^[._-]+/, "");
+  const noTrailing = noLeading.replace(/[._-]+$/, "");
+  const collapsed = noTrailing.replace(/[._-]{2,}/g, "_");
+  return collapsed.slice(0, 32);
+}
+
+function usernameToInternalEmail(username) {
+  const clean = sanitizeUsername(username);
+  if (!clean) return "";
+  return `${clean}@lingo.local`;
+}
+
+function normalizeGender(value) {
+  return ["nam", "nu", "khac", "khong_tiet_lo"].includes(value) ? value : "khong_tiet_lo";
+}
+
+export function mapUserProfileRow(row) {
+  if (!row || typeof row !== "object") return null;
+  return {
+    userId: String(row.user_id || ""),
+    name: String(row.display_name || "").trim(),
+    birthday: typeof row.birthday === "string" ? row.birthday : "",
+    gender: normalizeGender(row.gender),
+    avatarUrl: String(row.avatar_url || "").trim(),
+    createdAt: row.created_at || null,
+    updatedAt: row.updated_at || null,
+  };
+}
+
 export function getSupabaseClient() {
   const err = getSupabaseConfigError();
   if (err) throw new Error(err);
@@ -126,10 +161,102 @@ export async function signInWithProvider(providerId, { redirectTo } = {}, client
   return data;
 }
 
+export async function signInWithUsernamePassword(
+  { username, password } = {},
+  client = getSupabaseClient(),
+) {
+  const cleanUsername = sanitizeUsername(username);
+  const pass = String(password || "");
+  if (!cleanUsername) throw new Error("Vui lòng nhập tên đăng nhập.");
+  if (!pass) throw new Error("Vui lòng nhập mật khẩu.");
+
+  const email = usernameToInternalEmail(cleanUsername);
+  const { data, error } = await client.auth.signInWithPassword({
+    email,
+    password: pass,
+  });
+  if (error) throw error;
+  return data;
+}
+
+export async function signUpWithUsernamePassword(
+  { username, password } = {},
+  client = getSupabaseClient(),
+) {
+  const cleanUsername = sanitizeUsername(username);
+  const pass = String(password || "");
+  if (!cleanUsername) throw new Error("Vui lòng nhập tên đăng nhập.");
+  if (!pass) throw new Error("Vui lòng nhập mật khẩu.");
+
+  const email = usernameToInternalEmail(cleanUsername);
+  const { data, error } = await client.auth.signUp({
+    email,
+    password: pass,
+    options: {
+      data: {
+        username: cleanUsername,
+      },
+    },
+  });
+  if (error) throw error;
+  return {
+    ...data,
+    username: cleanUsername,
+    needsEmailConfirmation: !data?.session && !!data?.user,
+  };
+}
+
 export async function signOutAuth(client = getSupabaseClient()) {
   const { error } = await client.auth.signOut();
   if (error) throw error;
   return true;
+}
+
+export async function getMyUserProfile(client = getSupabaseClient()) {
+  const user = await getCurrentAuthUser(client).catch(() => null);
+  if (!user?.id) return null;
+  const { data, error } = await client
+    .from("lingo_user_profiles")
+    .select("*")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (error && !isNoRowsError(error)) throw error;
+  return mapUserProfileRow(data || null);
+}
+
+export async function upsertMyUserProfile(input = {}, client = getSupabaseClient()) {
+  const user = await getCurrentAuthUser(client);
+  if (!user?.id) throw new Error("UNAUTHENTICATED");
+
+  const payload = {
+    user_id: user.id,
+    display_name: String(input.name || "").trim() || sanitizeUsername(user.username) || "user",
+    birthday: input.birthday ? String(input.birthday) : null,
+    gender: normalizeGender(input.gender),
+    avatar_url: String(input.avatarUrl || "").trim() || null,
+    updated_at: new Date().toISOString(),
+  };
+
+  const { data, error } = await client
+    .from("lingo_user_profiles")
+    .upsert(payload, { onConflict: "user_id" })
+    .select("*")
+    .maybeSingle();
+  if (error) throw error;
+  return mapUserProfileRow(data || payload);
+}
+
+export async function getUserProfilesByIds(userIds = [], client = getSupabaseClient()) {
+  const ids = Array.isArray(userIds)
+    ? userIds.map((v) => String(v || "").trim()).filter(Boolean)
+    : [];
+  if (!ids.length) return [];
+  const { data, error } = await client
+    .from("lingo_user_profiles")
+    .select("*")
+    .in("user_id", ids);
+  if (error) throw error;
+  return Array.isArray(data) ? data.map(mapUserProfileRow).filter(Boolean) : [];
 }
 
 function firstRow(data) {
@@ -227,4 +354,3 @@ export async function joinPairRoom(code, user, client = getSupabaseClient()) {
   if (error) throw error;
   return firstRow(data);
 }
-
