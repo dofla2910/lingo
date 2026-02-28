@@ -425,6 +425,12 @@ export const lingoActions = {
       if (nextMode === "ultra_minimal" || nextMode === "standard") {
         draft.ui.authPanelMode = nextMode;
       }
+      const nextFont = input?.ui?.systemFont;
+      if (nextFont === "be_vietnam_pro" || nextFont === "paytone_one" || nextFont === "itim" || nextFont === "pangolin" || nextFont === "pacifico" || nextFont === "prata") {
+        draft.ui.systemFont = nextFont;
+      } else if (nextFont === "pacifico_prata") {
+        draft.ui.systemFont = "prata";
+      }
     });
   },
   saveStartDate(startDate) {
@@ -438,6 +444,16 @@ export const lingoActions = {
       draft.ui = draft.ui && typeof draft.ui === "object" ? draft.ui : {};
       if (mode === "standard" || mode === "ultra_minimal") {
         draft.ui.authPanelMode = mode;
+      }
+    });
+  },
+  setSystemFont(font) {
+    return updateState((draft) => {
+      draft.ui = draft.ui && typeof draft.ui === "object" ? draft.ui : {};
+      if (font === "be_vietnam_pro" || font === "paytone_one" || font === "itim" || font === "pangolin" || font === "pacifico" || font === "prata") {
+        draft.ui.systemFont = font;
+      } else if (font === "pacifico_prata") {
+        draft.ui.systemFont = "prata";
       }
     });
   },

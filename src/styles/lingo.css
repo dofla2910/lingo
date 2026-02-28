@@ -4,6 +4,9 @@
       --gradient-primary:linear-gradient(135deg,var(--coral),#ff6f91);
       --shadow-primary:0 10px 20px rgba(255,111,145,.25);
       --shadow-primary-soft:0 8px 16px rgba(255,111,145,.22);
+      --font-system:"Be Vietnam Pro",sans-serif;
+      --font-heading:"Be Vietnam Pro",sans-serif;
+      --font-accent:"Be Vietnam Pro",sans-serif;
       --ink:#5e4d57;
       --ink2:#7a6973;
       --fire:#ef476f;
@@ -11,10 +14,41 @@
       --air:#7bdff2;
       --water:#3a86ff;
     }
+    :root[data-font-theme="be_vietnam_pro"]{
+      --font-system:"Be Vietnam Pro",sans-serif;
+      --font-heading:"Be Vietnam Pro",sans-serif;
+      --font-accent:"Be Vietnam Pro",sans-serif;
+    }
+    :root[data-font-theme="paytone_one"]{
+      --font-system:"Paytone One",sans-serif;
+      --font-heading:"Paytone One",sans-serif;
+      --font-accent:"Paytone One",sans-serif;
+    }
+    :root[data-font-theme="itim"]{
+      --font-system:"Itim",cursive;
+      --font-heading:"Itim",cursive;
+      --font-accent:"Itim",cursive;
+    }
+    :root[data-font-theme="pangolin"]{
+      --font-system:"Pangolin",cursive;
+      --font-heading:"Pangolin",cursive;
+      --font-accent:"Pangolin",cursive;
+    }
+    :root[data-font-theme="pacifico"]{
+      --font-system:"Pacifico",cursive;
+      --font-heading:"Pacifico",cursive;
+      --font-accent:"Pacifico",cursive;
+    }
+    :root[data-font-theme="prata"],
+    :root[data-font-theme="pacifico_prata"]{
+      --font-system:"Prata",serif;
+      --font-heading:"Prata",serif;
+      --font-accent:"Prata",serif;
+    }
     html,body{min-height:100%}
     html{scroll-behavior:smooth}
     body{
-      font-family:"Be Vietnam Pro",sans-serif;
+      font-family:var(--font-system);
       color:var(--ink);
       background:
         radial-gradient(circle at 12% 10%, rgba(255,255,255,.75), transparent 42%),
@@ -76,6 +110,8 @@
     .gradient-primary{background:var(--gradient-primary)}
     .shadow-primary{box-shadow:var(--shadow-primary)}
     .badge-primary{background:var(--gradient-primary);color:#fff;box-shadow:var(--shadow-primary-soft)}
+    .font-heading{font-family:var(--font-heading)}
+    .font-accent{font-family:var(--font-accent)}
     .field{width:100%;border-radius:.9rem;border:1px solid rgba(255,184,216,.5);background:rgba(255,255,255,.86);padding:.65rem .8rem;outline:none}
     .field:focus{border-color:rgba(255,125,176,.85);box-shadow:0 0 0 4px rgba(255,160,203,.15)}
     .btn:focus-visible,.field:focus-visible,button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{

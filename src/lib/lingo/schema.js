@@ -48,6 +48,7 @@ export function createDefaultState() {
     },
     ui: {
       authPanelMode: "ultra_minimal", // ultra_minimal | standard
+      systemFont: "be_vietnam_pro", // be_vietnam_pro | paytone_one | itim | pangolin | pacifico | prata
     },
   };
 }
@@ -93,6 +94,14 @@ export function migrateState(rawInput) {
   const authPanelMode = ["ultra_minimal", "standard"].includes(ui.authPanelMode)
     ? ui.authPanelMode
     : "ultra_minimal";
+  const systemFont = (() => {
+    if (ui.systemFont === "paytone_one") return "paytone_one";
+    if (ui.systemFont === "itim") return "itim";
+    if (ui.systemFont === "pangolin") return "pangolin";
+    if (ui.systemFont === "pacifico") return "pacifico";
+    if (ui.systemFont === "prata" || ui.systemFont === "pacifico_prata") return "prata";
+    return "be_vietnam_pro";
+  })();
 
   return {
     ...raw,
@@ -118,6 +127,7 @@ export function migrateState(rawInput) {
     ui: {
       ...ui,
       authPanelMode,
+      systemFont,
     },
   };
 }

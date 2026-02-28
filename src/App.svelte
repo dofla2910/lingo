@@ -270,6 +270,18 @@
   $: canShowMainContent = hasRoom;
   $: showSetupChoice = hasRoom && !hasStartDate;
   $: authPanelMode = $lingoState?.ui?.authPanelMode === "standard" ? "standard" : "ultra_minimal";
+  $: systemFont = (() => {
+    const value = $lingoState?.ui?.systemFont;
+    if (value === "paytone_one") return "paytone_one";
+    if (value === "itim") return "itim";
+    if (value === "pangolin") return "pangolin";
+    if (value === "pacifico") return "pacifico";
+    if (value === "prata" || value === "pacifico_prata") return "prata";
+    return "be_vietnam_pro";
+  })();
+  $: if (typeof document !== "undefined") {
+    document.documentElement.setAttribute("data-font-theme", systemFont);
+  }
 
   $: celebrationStart = parseDateTime($lingoState?.settings?.startDate || "");
   $: celebrationView = buildMilestoneView(celebrationStart, new Date($lingoNow));
@@ -502,13 +514,6 @@
     on:close={closeSettings}
     on:saved={() => {
       settingsOpen = false;
-    }}
-    on:reset={() => {
-      settingsOpen = false;
-      wizardRequired = true;
-      wizardOpen = false;
-      clearCelebrationState();
-      showToast("Dữ liệu đã đặt lại. Hãy dùng Wizard hoặc nhập JSON để bắt đầu lại.");
     }}
   />
 
