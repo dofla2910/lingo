@@ -37,6 +37,7 @@
   let authPairingPanelRef;
   let currentPath = "/";
   let removePopstateListener = () => {};
+  let removeModalScrollLock = () => {};
   let lastAutoPromptRoomId = "";
   let pairingAutoPrompted = false;
   let authStateLoading = true;
@@ -109,6 +110,80 @@
     history.replaceState({}, "", cleanPath);
   }
 
+  function setupGlobalModalScrollLock() {
+    if (typeof window === "undefined" || typeof MutationObserver === "undefined") {
+      return () => {};
+    }
+
+    const body = document.body;
+    const root = document.documentElement;
+    let locked = false;
+    let lockScrollY = 0;
+    let prevPaddingRight = "";
+    let rafId = 0;
+
+    const hasOpenModal = () => !!document.querySelector(".modal.open");
+
+    const applyLockState = () => {
+      rafId = 0;
+      const shouldLock = hasOpenModal();
+      if (shouldLock === locked) return;
+
+      if (shouldLock) {
+        lockScrollY = window.scrollY || window.pageYOffset || 0;
+        prevPaddingRight = body.style.paddingRight || "";
+
+        const scrollbarGap = Math.max(0, window.innerWidth - root.clientWidth);
+        if (scrollbarGap > 0) {
+          body.style.paddingRight = `${scrollbarGap}px`;
+        }
+
+        body.classList.add("modal-open");
+        body.style.top = `-${lockScrollY}px`;
+      } else {
+        body.classList.remove("modal-open");
+        body.style.top = "";
+        body.style.paddingRight = prevPaddingRight;
+        window.scrollTo(0, lockScrollY);
+      }
+
+      locked = shouldLock;
+    };
+
+    const scheduleApply = () => {
+      if (rafId) return;
+      rafId = window.requestAnimationFrame(applyLockState);
+    };
+
+    const observer = new MutationObserver(scheduleApply);
+    observer.observe(body, {
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+
+    const onResize = () => {
+      if (!locked) return;
+      const scrollbarGap = Math.max(0, window.innerWidth - root.clientWidth);
+      body.style.paddingRight = scrollbarGap > 0 ? `${scrollbarGap}px` : prevPaddingRight;
+    };
+
+    window.addEventListener("resize", onResize, { passive: true });
+    scheduleApply();
+
+    return () => {
+      if (rafId) window.cancelAnimationFrame(rafId);
+      observer.disconnect();
+      window.removeEventListener("resize", onResize);
+      if (locked) {
+        body.classList.remove("modal-open");
+        body.style.top = "";
+        body.style.paddingRight = prevPaddingRight;
+        window.scrollTo(0, lockScrollY);
+      }
+    };
+  }
+
   async function reconnectRoom(roomId = "", options = {}) {
     try {
       if (typeof window !== "undefined") {
@@ -160,6 +235,7 @@
   onMount(() => {
     stripEmptyHash();
     updateCurrentPath();
+    removeModalScrollLock = setupGlobalModalScrollLock();
 
     if (typeof window !== "undefined") {
       const onPopstate = () => updateCurrentPath();
@@ -180,6 +256,7 @@
   onDestroy(() => {
     clearTimeout(toastTimer);
     removePopstateListener?.();
+    removeModalScrollLock?.();
     destroyLingoSharedStateBridge();
   });
 

@@ -38,6 +38,7 @@
   $: visibleRows = displayRows.slice(0, PREVIEW_LIMIT);
   $: if (hiddenCount === 0 && eventsModalOpen) eventsModalOpen = false;
   $: countLabel = `${sortedEvents.length} sự kiện`;
+  $: hiddenCountBadge = hiddenCount > 99 ? "99+" : String(hiddenCount);
 
   function resetForm() {
     editingId = "";
@@ -195,8 +196,14 @@
       </button>
       <span class="pill text-[11px] font-semibold text-[color:var(--ink2)]">{countLabel}</span>
       {#if hiddenCount > 0}
-        <button class="btn btn-soft !px-3.5 !py-1.5 text-xs whitespace-nowrap" type="button" on:click={openEventsModal}>
-          {`Xem thêm ${hiddenCount}`}
+        <button class="btn btn-soft relative !px-4 !py-2 text-xs font-semibold whitespace-nowrap" type="button" on:click={openEventsModal}>
+          Xem thêm
+          <span
+            class="badge-primary pointer-events-none absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold leading-none shadow-sm shadow-pink-300/60 ring-2 ring-white/90"
+            aria-label={`Còn ${hiddenCount} sự kiện`}
+          >
+            {hiddenCountBadge}
+          </span>
         </button>
       {/if}
     </div>

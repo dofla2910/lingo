@@ -1,6 +1,9 @@
 :root{
       --rose:#FEC5E5;
       --coral:#FF8FA3;
+      --gradient-primary:linear-gradient(135deg,var(--coral),#ff6f91);
+      --shadow-primary:0 10px 20px rgba(255,111,145,.25);
+      --shadow-primary-soft:0 8px 16px rgba(255,111,145,.22);
       --ink:#5e4d57;
       --ink2:#7a6973;
       --fire:#ef476f;
@@ -19,6 +22,13 @@
         radial-gradient(circle at 25% 90%, rgba(255,218,236,.55), transparent 40%),
         linear-gradient(140deg,#ffeaf4,#ffd9ea 50%,#ffe7da);
       overflow-x:hidden;
+    }
+    body.modal-open{
+      position:fixed;
+      inset:0;
+      width:100%;
+      overflow:hidden;
+      overscroll-behavior:none;
     }
     .skip-link{
       position:fixed;left:.75rem;top:.75rem;z-index:80;
@@ -61,8 +71,11 @@
     }
     .btn:hover{transform:translateY(-1px)}
     .btn-soft{background:rgba(255,255,255,.8)}
-    .btn-primary{background:linear-gradient(135deg,var(--coral),#ff6f91);color:#fff;border-color:transparent;box-shadow:0 10px 20px rgba(255,111,145,.25)}
+    .btn-primary{background:var(--gradient-primary);color:#fff;border-color:transparent;box-shadow:var(--shadow-primary)}
     .btn-danger{background:rgba(239,71,111,.08);color:#c9385c;border-color:rgba(239,71,111,.18)}
+    .gradient-primary{background:var(--gradient-primary)}
+    .shadow-primary{box-shadow:var(--shadow-primary)}
+    .badge-primary{background:var(--gradient-primary);color:#fff;box-shadow:var(--shadow-primary-soft)}
     .field{width:100%;border-radius:.9rem;border:1px solid rgba(255,184,216,.5);background:rgba(255,255,255,.86);padding:.65rem .8rem;outline:none}
     .field:focus{border-color:rgba(255,125,176,.85);box-shadow:0 0 0 4px rgba(255,160,203,.15)}
     .btn:focus-visible,.field:focus-visible,button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{
@@ -151,9 +164,19 @@
       to{opacity:1;transform:none}
     }
     .modal-card{
-      width:100%;max-width:64rem;max-height:92vh;overflow:hidden;
+      width:100%;
+      max-width:64rem;
+      max-height:92vh;
+      max-block-size:92vh;
+      block-size:auto;
+      overflow:hidden;
       border-radius:1.4rem;background:linear-gradient(180deg,rgba(255,255,255,.95),rgba(255,247,251,.92));
       border:1px solid rgba(255,218,234,.8);box-shadow:0 22px 60px rgba(229,113,161,.24)
+    }
+    @supports (block-size: calc-size(auto, size)) {
+      .modal-card{
+        block-size:clamp(18rem, calc-size(auto, size + .5rem), 92vh);
+      }
     }
     .event-item{
       border-radius:1rem;padding:.8rem;border:1px solid rgba(255,202,223,.46);background:rgba(255,255,255,.78);box-shadow:0 8px 20px rgba(255,170,204,.1)
