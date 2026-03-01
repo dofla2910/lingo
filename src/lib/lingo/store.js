@@ -506,32 +506,6 @@ export const lingoActions = {
   resetAll() {
     return persistState(createDefaultState());
   },
-  exportJsonString() {
-    return JSON.stringify(currentState(), null, 2);
-  },
-  exportJsonFile() {
-    if (typeof document === "undefined" || typeof URL === "undefined") return false;
-    const blob = new Blob([this.exportJsonString()], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    const safeDate = new Date().toISOString().slice(0, 10);
-    a.href = url;
-    a.download = `lingo-backup-${safeDate}.json`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 0);
-    return true;
-  },
-  importJsonText(text) {
-    let parsed;
-    try {
-      parsed = JSON.parse(String(text || ""));
-    } catch {
-      throw new Error("Tệp JSON không hợp lệ.");
-    }
-    return persistState(migrateState(parsed));
-  },
 };
 
 export async function initLingoSharedStateBridge() {

@@ -601,15 +601,15 @@
 
 <svelte:window on:keydown={handleWindowKeydown} />
 
-<section class="card rounded-3xl p-4 sm:p-5" aria-labelledby="galleryTitle">
+<section class="card gallery-section rounded-3xl p-4 sm:p-5" aria-labelledby="galleryTitle">
   <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
     <div>
       <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Gallery Together</p>
       <h2 id="galleryTitle" class="text-xl font-extrabold text-[color:var(--ink)]">Album Kỷ niệm</h2>
       <p class="text-sm text-[color:var(--ink2)]">Lưu lại khoảnh khắc của hai bạn theo từng album.</p>
     </div>
-    <div class="flex flex-wrap gap-2">
-      <button type="button" class="btn btn-primary text-sm" on:click={openCreateAlbumModal}>+ Tạo album mới</button>
+    <div class="flex w-full flex-wrap gap-2 sm:w-auto sm:justify-end">
+      <button type="button" class="btn btn-primary text-sm min-h-[44px] w-full sm:w-auto" on:click={openCreateAlbumModal}>+ Tạo album mới</button>
     </div>
   </div>
 
@@ -619,7 +619,21 @@
 
   <div class="mt-4">
     {#if loadingAlbums}
-      <div class="rounded-2xl border border-pink-100/80 bg-white/70 p-4 text-sm text-[color:var(--ink2)]">Đang tải album...</div>
+      <div class="rounded-2xl border border-pink-100/80 bg-white/70 p-4" aria-busy="true" aria-live="polite">
+        <div class="skl h-3 w-24"></div>
+        <div class="skl mt-3 h-3 w-56 max-w-[80%]"></div>
+        <div class="mt-4 gallery-album-grid">
+          {#each Array(4) as _, idx (idx)}
+            <div class="overflow-hidden rounded-2xl border border-pink-100/80 bg-white/75">
+              <div class="skl aspect-square w-full"></div>
+              <div class="space-y-2 px-3 py-2">
+                <div class="skl h-3 w-4/5"></div>
+                <div class="skl h-2.5 w-2/5"></div>
+              </div>
+            </div>
+          {/each}
+        </div>
+      </div>
     {:else if !albums.length}
       <div class="rounded-2xl border border-pink-100/80 bg-white/70 p-5 text-center">
         <p class="text-base font-semibold text-[color:var(--ink)]">Chưa có album nào</p>
@@ -627,7 +641,7 @@
         <button type="button" class="btn btn-primary text-sm mt-3" on:click={openCreateAlbumModal}>+ Tạo album mới</button>
       </div>
     {:else}
-      <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+      <div class="gallery-album-grid">
         {#each albums as album}
           <button
             type="button"
@@ -650,13 +664,13 @@
 
 <div class={`modal ${albumModalOpen ? "open" : ""}`} aria-hidden={!albumModalOpen} on:click|self={closeAlbumModal}>
   <div class="modal-card max-w-6xl" role="dialog" aria-modal="true" aria-labelledby="albumPhotosTitle" tabindex="-1">
-    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-pink-100/70 px-4 py-3">
+    <div class="gallery-modal-header border-b border-pink-100/70 px-4 py-3">
       <div>
         <p class="text-xs font-semibold uppercase tracking-[.14em] text-pink-500/80">Album</p>
         <h3 id="albumPhotosTitle" class="text-lg font-bold text-[color:var(--ink)]">{activeAlbum()?.name || "Album kỷ niệm"}</h3>
       </div>
-      <div class="flex flex-wrap items-center gap-2">
-        <div class="inline-flex rounded-full border border-pink-100/80 bg-white/70 p-1" role="group" aria-label="Chọn kiểu hiển thị ảnh">
+      <div class="gallery-modal-actions">
+        <div class="inline-flex w-full justify-between rounded-full border border-pink-100/80 bg-white/70 p-1 sm:w-auto sm:justify-start" role="group" aria-label="Chọn kiểu hiển thị ảnh">
           <button
             type="button"
             class={`rounded-full px-3 py-1 text-xs font-semibold transition ${
@@ -682,14 +696,28 @@
             Kiểu Locket
           </button>
         </div>
-        <button type="button" class="btn btn-primary text-sm" on:click={openUploadModal}>+ Thêm ảnh</button>
-        <button type="button" class="btn btn-soft text-sm" on:click={closeAlbumModal}>Đóng</button>
+        <button type="button" class="btn btn-primary text-sm min-h-[40px] w-full sm:w-auto" on:click={openUploadModal}>+ Thêm ảnh</button>
+        <button type="button" class="btn btn-soft text-sm min-h-[40px] w-full sm:w-auto" on:click={closeAlbumModal}>Đóng</button>
       </div>
     </div>
 
     <div class="max-h-[76vh] overflow-y-auto px-4 py-4">
       {#if loadingPhotos}
-        <div class="rounded-2xl border border-pink-100/80 bg-white/70 p-4 text-sm text-[color:var(--ink2)]">Đang tải ảnh...</div>
+        <div class="rounded-2xl border border-pink-100/80 bg-white/70 p-4" aria-busy="true" aria-live="polite">
+          <div class="skl h-3 w-24"></div>
+          <div class="skl mt-3 h-3 w-56 max-w-[80%]"></div>
+          <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {#each Array(6) as _, idx (idx)}
+              <div class="overflow-hidden rounded-2xl border border-pink-100/80 bg-white/85">
+                <div class="skl aspect-square w-full"></div>
+                <div class="space-y-2 px-3 py-2">
+                  <div class="skl h-3 w-3/4"></div>
+                  <div class="skl h-2.5 w-1/2"></div>
+                </div>
+              </div>
+            {/each}
+          </div>
+        </div>
       {:else if !photos.length}
         <div class="rounded-2xl border border-dashed border-pink-200 bg-white/70 p-5 text-center">
           <p class="text-base font-semibold text-[color:var(--ink)]">Album chưa có ảnh</p>
@@ -735,7 +763,8 @@
 {#if albumModalOpen}
   <button
     type="button"
-    class="fixed bottom-5 right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full border border-pink-300/40 bg-gradient-to-br from-pink-400 to-rose-500 text-white shadow-xl shadow-pink-300/50 transition active:scale-95"
+    class="fixed z-40 flex h-14 w-14 items-center justify-center rounded-full border border-pink-300/40 bg-gradient-to-br from-pink-400 to-rose-500 text-white shadow-xl shadow-pink-300/50 transition active:scale-95"
+    style="bottom: max(1rem, calc(env(safe-area-inset-bottom) + 0.75rem)); right: max(1rem, calc(env(safe-area-inset-right) + 0.75rem));"
     on:click={openUploadModal}
     aria-label="Thêm ảnh mới"
   >
@@ -881,16 +910,16 @@
           <img src={viewerPhoto.image_url} alt={viewerPhoto.note || "Ảnh kỷ niệm"} class="max-h-[72vh] w-full object-contain" />
         </div>
 
-        <div class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-2xl border border-pink-100/80 bg-white/80 px-3 py-2">
+        <div class="grid grid-cols-1 items-center gap-2 rounded-2xl border border-pink-100/80 bg-white/80 px-3 py-2 sm:grid-cols-[minmax(0,1fr)_auto]">
           <div class="min-w-0">
             <p class="truncate text-sm font-semibold text-[color:var(--ink)]">{viewerPhoto.note || "Không có ghi chú"}</p>
             <p class="mt-1 text-xs text-[color:var(--ink2)]">{formatDateTime(viewerPhoto.created_at)}</p>
           </div>
 
           {#if photos.length > 1}
-            <div class="flex shrink-0 gap-2">
-              <button type="button" class="btn btn-soft text-sm" on:click={showPrevPhoto}>← Trước</button>
-              <button type="button" class="btn btn-soft text-sm" on:click={showNextPhoto}>Sau →</button>
+            <div class="grid w-full shrink-0 grid-cols-2 gap-2 sm:w-auto sm:flex">
+              <button type="button" class="btn btn-soft text-sm min-h-[40px] w-full sm:w-auto" on:click={showPrevPhoto}>← Trước</button>
+              <button type="button" class="btn btn-soft text-sm min-h-[40px] w-full sm:w-auto" on:click={showNextPhoto}>Sau →</button>
             </div>
           {/if}
         </div>
@@ -898,3 +927,47 @@
     {/if}
   </div>
 </div>
+
+<style>
+  .gallery-section {
+    container-type: inline-size;
+  }
+
+  .gallery-album-grid {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: repeat(auto-fill, minmax(min(9.75rem, 100%), 1fr));
+  }
+
+  .gallery-modal-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .gallery-modal-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  @media (min-width: 640px) {
+    .gallery-album-grid {
+      gap: 0.85rem;
+    }
+
+    .gallery-modal-actions {
+      width: auto;
+    }
+  }
+
+  @container (max-width: 26rem) {
+    .gallery-modal-actions {
+      justify-content: flex-start;
+    }
+  }
+</style>

@@ -102,7 +102,7 @@
         <p>Bạn có toàn quyền quản lý dữ liệu trong phòng của mình:</p>
         <ul>
           <li><strong>Sửa đổi:</strong> Thay đổi thông tin bất cứ lúc nào trong phần Cài đặt.</li>
-          <li><strong>Xuất/Nhập dữ liệu:</strong> Dùng tính năng sao lưu/khôi phục JSON trong ứng dụng.</li>
+          <li><strong>Quản lý dữ liệu:</strong> Chỉnh sửa thông tin trực tiếp trong ứng dụng và đồng bộ trong phòng đã ghép cặp.</li>
           <li><strong>Xóa dữ liệu:</strong> Dùng nút "Đặt lại dữ liệu" để ghi đè dữ liệu phòng hiện tại.</li>
           <li><strong>Đăng xuất:</strong> Ngắt phiên đăng nhập Supabase Auth khỏi ứng dụng.</li>
         </ul>

@@ -167,7 +167,7 @@
 
 <svelte:window on:keydown={handleWindowKeydown} />
 
-<section class="card rounded-3xl p-4 sm:p-5">
+<section class="card events-section rounded-3xl p-4 sm:p-5">
   <div>
     <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Ngày đặc biệt</p>
     <h2 class="text-lg sm:text-xl font-bold text-[color:var(--ink)]">Quản lý ngày quan trọng</h2>
@@ -188,15 +188,15 @@
     </div>
   {/if}
 
-  <div class="mt-4 flex flex-wrap items-center justify-between gap-2">
+  <div class="events-toolbar mt-4">
     <p class="text-sm font-semibold text-[color:var(--ink)]">Danh sách sự kiện</p>
-    <div class="flex flex-wrap items-center justify-end gap-2">
-      <button class="btn btn-primary !px-3.5 !py-1.5 text-xs whitespace-nowrap" type="button" on:click={openCreateEventModal}>
+    <div class="events-toolbar-actions">
+      <button class="btn btn-primary !px-3.5 !py-1.5 text-xs min-h-[40px] w-full sm:w-auto whitespace-nowrap" type="button" on:click={openCreateEventModal}>
         + Thêm sự kiện
       </button>
-      <span class="pill text-[11px] font-semibold text-[color:var(--ink2)]">{countLabel}</span>
+      <span class="pill h-10 text-[11px] font-semibold text-[color:var(--ink2)]">{countLabel}</span>
       {#if hiddenCount > 0}
-        <button class="btn btn-soft relative !px-4 !py-2 text-xs font-semibold whitespace-nowrap" type="button" on:click={openEventsModal}>
+        <button class="btn btn-soft relative !px-4 !py-2 text-xs font-semibold min-h-[40px] w-full sm:w-auto whitespace-nowrap" type="button" on:click={openEventsModal}>
           Xem thêm
           <span
             class="badge-primary pointer-events-none absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold leading-none shadow-sm shadow-pink-300/60 ring-2 ring-white/90"
@@ -245,9 +245,9 @@
               </p>
             </div>
 
-            <div class="flex shrink-0 gap-2">
-              <button class="btn btn-soft text-sm" type="button" on:click={() => openEditEventModal(row.event)}>Sửa</button>
-              <button class="btn btn-soft text-sm !text-rose-600" type="button" on:click={() => removeEvent(row.event)}>Xoá</button>
+            <div class="grid grid-cols-2 gap-2 sm:flex sm:shrink-0">
+              <button class="btn btn-soft text-sm min-h-[40px] w-full sm:w-auto" type="button" on:click={() => openEditEventModal(row.event)}>Sửa</button>
+              <button class="btn btn-soft text-sm !text-rose-600 min-h-[40px] w-full sm:w-auto" type="button" on:click={() => removeEvent(row.event)}>Xoá</button>
             </div>
           </div>
         </article>
@@ -321,10 +321,10 @@
         <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Ngày đặc biệt</p>
         <h3 id="eventsModalTitle" class="text-lg font-bold text-[color:var(--ink)]">Danh sách sự kiện</h3>
       </div>
-      <div class="flex flex-wrap items-center justify-end gap-2">
+      <div class="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
         <span class="pill text-[11px] font-semibold text-[color:var(--ink2)]">{countLabel}</span>
-        <button class="btn btn-primary text-sm" type="button" on:click={() => openCreateEventModal()}>+ Thêm</button>
-        <button type="button" class="btn btn-soft text-sm" on:click={closeEventsModal}>Đóng</button>
+        <button class="btn btn-primary text-sm min-h-[40px] w-full sm:w-auto" type="button" on:click={() => openCreateEventModal()}>+ Thêm</button>
+        <button type="button" class="btn btn-soft text-sm min-h-[40px] w-full sm:w-auto" on:click={closeEventsModal}>Đóng</button>
       </div>
     </div>
 
@@ -364,11 +364,11 @@
                 </p>
               </div>
 
-              <div class="flex shrink-0 gap-2">
-                <button class="btn btn-soft text-sm" type="button" on:click={() => openEditEventModal(row.event, { closeListModal: true })}>
+              <div class="grid grid-cols-2 gap-2 sm:flex sm:shrink-0">
+                <button class="btn btn-soft text-sm min-h-[40px] w-full sm:w-auto" type="button" on:click={() => openEditEventModal(row.event, { closeListModal: true })}>
                   Sửa
                 </button>
-                <button class="btn btn-soft text-sm !text-rose-600" type="button" on:click={() => removeEvent(row.event)}>Xoá</button>
+                <button class="btn btn-soft text-sm !text-rose-600 min-h-[40px] w-full sm:w-auto" type="button" on:click={() => removeEvent(row.event)}>Xoá</button>
               </div>
             </div>
           </article>
@@ -377,3 +377,37 @@
     </div>
   </div>
 </div>
+
+<style>
+  .events-section {
+    container-type: inline-size;
+  }
+
+  .events-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .events-toolbar-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: flex-end;
+    width: 100%;
+  }
+
+  @media (min-width: 640px) {
+    .events-toolbar-actions {
+      width: auto;
+    }
+  }
+
+  @container (max-width: 28rem) {
+    .events-toolbar-actions {
+      justify-content: flex-start;
+    }
+  }
+</style>
