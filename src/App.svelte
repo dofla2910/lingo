@@ -5,6 +5,7 @@
   import ProfilesSection from "./lib/components/ProfilesSection.svelte";
   import MilestonesSection from "./lib/components/MilestonesSection.svelte";
   import GalleryTogetherSection from "./lib/components/GalleryTogetherSection.svelte";
+  import TimeCapsuleSection from "./lib/components/TimeCapsuleSection.svelte";
   import EventsSection from "./lib/components/EventsSection.svelte";
   import AuthPairingPanel from "./lib/components/AuthPairingPanel.svelte";
   import AmbientLayer from "./lib/components/AmbientLayer.svelte";
@@ -144,6 +145,10 @@
 
             <div class="pinterest-tile">
               <GalleryTogetherSection on:toast={(e) => showToast(e.detail)} />
+            </div>
+
+            <div class="pinterest-tile">
+              <TimeCapsuleSection roomId={$viewModel.roomId} on:toast={(e) => showToast(e.detail)} />
             </div>
 
             <div class="pinterest-tile">
