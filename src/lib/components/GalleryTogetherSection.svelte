@@ -1,6 +1,7 @@
 ﻿<script>
   import { createEventDispatcher, onDestroy, onMount, tick } from "svelte";
   import { supabase as sharedSupabase } from "$lib/lingo/supabaseClient.js";
+  import ModalShell from "./ModalShell.svelte";
 
   const BUCKET_NAME = "lingo-gallery";
   const dispatch = createEventDispatcher();
@@ -663,46 +664,51 @@
   </div>
 </section>
 
-<div class={`modal ${albumModalOpen ? "open" : ""}`} aria-hidden={!albumModalOpen} on:click|self={closeAlbumModal}>
-  <div class="modal-card max-w-6xl" role="dialog" aria-modal="true" aria-labelledby="albumPhotosTitle" tabindex="-1">
-    <div class="gallery-modal-header border-b border-pink-100/70 px-4 py-3">
-      <div>
-        <p class="text-xs font-semibold uppercase tracking-[.14em] text-pink-500/80">Album</p>
-        <h3 id="albumPhotosTitle" class="text-lg font-bold text-[color:var(--ink)]">{activeAlbum()?.name || "Album kỷ niệm"}</h3>
-      </div>
-      <div class="gallery-modal-actions">
-        <div class="inline-flex w-full justify-between rounded-full border border-pink-100/80 bg-white/70 p-1 sm:w-auto sm:justify-start" role="group" aria-label="Chọn kiểu hiển thị ảnh">
-          <button
-            type="button"
-            class={`rounded-full px-3 py-1 text-xs font-semibold transition ${
-              albumLayout === "pinterest"
-                ? "bg-pink-500 text-white shadow-sm shadow-pink-300/40"
-                : "text-[color:var(--ink2)]"
-            }`}
-            aria-pressed={albumLayout === "pinterest"}
-            on:click={() => (albumLayout = "pinterest")}
-          >
-            Kiểu Pinterest
-          </button>
-          <button
-            type="button"
-            class={`rounded-full px-3 py-1 text-xs font-semibold transition ${
-              albumLayout === "locket"
-                ? "bg-pink-500 text-white shadow-sm shadow-pink-300/40"
-                : "text-[color:var(--ink2)]"
-            }`}
-            aria-pressed={albumLayout === "locket"}
-            on:click={() => (albumLayout = "locket")}
-          >
-            Kiểu Locket
-          </button>
-        </div>
-        <button type="button" class="btn btn-primary text-sm min-h-[40px] w-full sm:w-auto" on:click={openUploadModal}>+ Thêm ảnh</button>
-        <button type="button" class="btn btn-soft text-sm min-h-[40px] w-full sm:w-auto" on:click={closeAlbumModal}>Đóng</button>
-      </div>
+<ModalShell
+  open={albumModalOpen}
+  close={closeAlbumModal}
+  labelledBy="albumPhotosTitle"
+  preset="modal-preset-gallery"
+  maxWidth="max-w-6xl"
+>
+  <div slot="header">
+    <div>
+      <p class="text-xs font-semibold uppercase tracking-[.14em] text-pink-500/80">Album</p>
+      <h3 id="albumPhotosTitle" class="text-lg font-bold text-[color:var(--ink)]">{activeAlbum()?.name || "Album kỷ niệm"}</h3>
     </div>
+    <div class="gallery-modal-actions">
+      <div class="inline-flex w-full justify-between rounded-full border border-pink-100/80 bg-white/70 p-1 sm:w-auto sm:justify-start" role="group" aria-label="Chọn kiểu hiển thị ảnh">
+        <button
+          type="button"
+          class={`rounded-full px-3 py-1 text-xs font-semibold transition ${
+            albumLayout === "pinterest"
+              ? "bg-pink-500 text-white shadow-sm shadow-pink-300/40"
+              : "text-[color:var(--ink2)]"
+          }`}
+          aria-pressed={albumLayout === "pinterest"}
+          on:click={() => (albumLayout = "pinterest")}
+        >
+          Kiểu Pinterest
+        </button>
+        <button
+          type="button"
+          class={`rounded-full px-3 py-1 text-xs font-semibold transition ${
+            albumLayout === "locket"
+              ? "bg-pink-500 text-white shadow-sm shadow-pink-300/40"
+              : "text-[color:var(--ink2)]"
+          }`}
+          aria-pressed={albumLayout === "locket"}
+          on:click={() => (albumLayout = "locket")}
+        >
+          Kiểu Locket
+        </button>
+      </div>
+      <button type="button" class="btn btn-primary text-sm min-h-[40px] w-full sm:w-auto" on:click={openUploadModal}>+ Thêm ảnh</button>
+      <button type="button" class="btn btn-soft text-sm min-h-[40px] w-full sm:w-auto" on:click={closeAlbumModal}>Đóng</button>
+    </div>
+  </div>
 
-    <div class="max-h-[76vh] overflow-y-auto px-4 py-4">
+  <div>
       {#if loadingPhotos}
         <div class="rounded-2xl border border-pink-100/80 bg-white/70 p-4" aria-busy="true" aria-live="polite">
           <div class="skl h-3 w-24"></div>
@@ -757,9 +763,8 @@
           </div>
         {/if}
       {/if}
-    </div>
   </div>
-</div>
+</ModalShell>
 
 {#if albumModalOpen}
   <button
@@ -773,14 +778,26 @@
   </button>
 {/if}
 
-<div class={`modal ${createModalOpen ? "open" : ""}`} aria-hidden={!createModalOpen} on:click|self={closeCreateAlbumModal}>
-  <div class="modal-card max-w-lg" role="dialog" aria-modal="true" aria-labelledby="createAlbumTitle" tabindex="-1">
-    <div class="border-b border-pink-100/70 px-4 py-3">
-      <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Album mới</p>
-      <h3 id="createAlbumTitle" class="text-lg font-bold text-[color:var(--ink)]">Tạo album kỷ niệm</h3>
-    </div>
+<ModalShell
+  open={createModalOpen}
+  close={closeCreateAlbumModal}
+  labelledBy="createAlbumTitle"
+  preset="modal-preset-sm"
+  maxWidth="max-w-lg"
+  showActions={true}
+  cancelLabel="Hủy"
+  primaryLabel={createBusy ? "Đang tạo..." : "Tạo album"}
+  primaryType="submit"
+  primaryForm="createAlbumForm"
+  cancelDisabled={createBusy}
+  primaryDisabled={createBusy}
+>
+  <div slot="header">
+    <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Album mới</p>
+    <h3 id="createAlbumTitle" class="text-lg font-bold text-[color:var(--ink)]">Tạo album kỷ niệm</h3>
+  </div>
 
-    <div class="space-y-3 px-4 py-4">
+  <form id="createAlbumForm" class="space-y-3" on:submit|preventDefault={createAlbum}>
       <div>
         <label class="label" for="album_name">Tên album</label>
         <input id="album_name" class="field mt-1 text-sm" type="text" maxlength="120" bind:value={createName} placeholder="Ví dụ: Chuyến đi Đà Lạt" />
@@ -789,145 +806,146 @@
         <label class="label" for="album_cover">Ảnh bìa (URL - tùy chọn)</label>
         <input id="album_cover" class="field mt-1 text-sm" type="url" bind:value={createCoverUrl} placeholder="https://..." />
       </div>
-    </div>
+  </form>
+</ModalShell>
 
-    <div class="flex justify-end gap-2 border-t border-pink-100/70 px-4 py-3">
-      <button type="button" class="btn btn-soft text-sm" on:click={closeCreateAlbumModal}>Hủy</button>
-      <button type="button" class="btn btn-primary text-sm" on:click={createAlbum} disabled={createBusy}>
-        {createBusy ? "Đang tạo..." : "Tạo album"}
-      </button>
+<ModalShell
+  open={uploadModalOpen}
+  close={closeUploadModal}
+  labelledBy="uploadPhotoTitle"
+  preset="modal-preset-gallery"
+  cardClass="relative max-w-xl"
+  showActions={true}
+  cancelLabel="Hủy"
+  primaryLabel={uploadBusy ? "Đang tải..." : "Tải ảnh lên"}
+  primaryDisabled={uploadBusy}
+  cancelDisabled={uploadBusy}
+  onPrimaryAction={uploadPhoto}
+>
+  {#if uploadBusy}
+    <div class="absolute inset-0 z-10 flex items-center justify-center bg-white/75 backdrop-blur-sm">
+      <div class="rounded-2xl border border-pink-100/80 bg-white px-5 py-4 text-center shadow-lg">
+        <div class="text-3xl animate-bounce">🦩</div>
+        <p class="mt-2 text-sm font-semibold text-[color:var(--ink)] animate-pulse">Đang tải ảnh lên...</p>
+      </div>
     </div>
+  {/if}
+
+  <div slot="header">
+    <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Thêm ảnh</p>
+    <h3 id="uploadPhotoTitle" class="text-lg font-bold text-[color:var(--ink)]">Thêm ảnh kỷ niệm mới</h3>
   </div>
-</div>
 
-<div class={`modal ${uploadModalOpen ? "open" : ""}`} aria-hidden={!uploadModalOpen} on:click|self={closeUploadModal}>
-  <div class="modal-card relative max-w-xl" role="dialog" aria-modal="true" aria-labelledby="uploadPhotoTitle" tabindex="-1">
-    {#if uploadBusy}
-      <div class="absolute inset-0 z-10 flex items-center justify-center bg-white/75 backdrop-blur-sm">
-        <div class="rounded-2xl border border-pink-100/80 bg-white px-5 py-4 text-center shadow-lg">
-          <div class="text-3xl animate-bounce">🦩</div>
-          <p class="mt-2 text-sm font-semibold text-[color:var(--ink)] animate-pulse">Đang tải ảnh lên...</p>
-        </div>
+  <div class="space-y-4">
+    <div class="rounded-2xl border border-dashed border-pink-200 bg-white/75 p-3">
+      <p class="text-sm font-semibold text-[color:var(--ink)]">Ảnh từ thư viện hoặc camera</p>
+      <p class="mt-1 text-xs text-[color:var(--ink2)]">Hỗ trợ iOS Safari và Android Chrome.</p>
+
+      <div class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <button type="button" class="btn btn-soft text-sm w-full" on:click={pickFromGallery}>Chọn từ thư viện</button>
+        <button type="button" class="btn btn-soft text-sm w-full" on:click={openCameraCapture} disabled={cameraBusy}>
+          {cameraBusy ? "Đang mở camera..." : "Mở camera"}
+        </button>
       </div>
-    {/if}
 
-    <div class="border-b border-pink-100/70 px-4 py-3">
-      <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Thêm ảnh</p>
-      <h3 id="uploadPhotoTitle" class="text-lg font-bold text-[color:var(--ink)]">Thêm ảnh kỷ niệm mới</h3>
-    </div>
+      <input bind:this={galleryInputRef} type="file" accept="image/*" class="hidden" on:change={onFileSelected} />
+      <input bind:this={cameraInputRef} type="file" accept="image/*" capture="environment" class="hidden" on:change={onFileSelected} />
 
-    <div class="space-y-4 px-4 py-4 max-h-[72vh] overflow-y-auto">
-      <div class="rounded-2xl border border-dashed border-pink-200 bg-white/75 p-3">
-        <p class="text-sm font-semibold text-[color:var(--ink)]">Ảnh từ thư viện hoặc camera</p>
-        <p class="mt-1 text-xs text-[color:var(--ink2)]">Hỗ trợ iOS Safari và Android Chrome.</p>
-
-        <div class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
-          <button type="button" class="btn btn-soft text-sm w-full" on:click={pickFromGallery}>Chọn từ thư viện</button>
-          <button type="button" class="btn btn-soft text-sm w-full" on:click={openCameraCapture} disabled={cameraBusy}>
-            {cameraBusy ? "Đang mở camera..." : "Mở camera"}
+      {#if cameraOpen}
+        <div class="mt-3 overflow-hidden rounded-xl border border-pink-100 bg-black">
+          <video bind:this={cameraVideoRef} autoplay playsinline muted class="h-auto w-full object-cover"></video>
+        </div>
+        <p class="mt-2 text-xs text-[color:var(--ink2)]">
+          Đang dùng: {cameraFacing === "environment" ? "camera sau" : "camera trước"}
+        </p>
+        <div class="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <button type="button" class="btn btn-primary text-sm w-full" on:click={captureCameraFrame}>Chụp ảnh</button>
+          <button type="button" class="btn btn-soft text-sm w-full" on:click={toggleCameraFacing} disabled={cameraBusy}>
+            {cameraBusy ? "Đang đổi camera..." : cameraFacing === "environment" ? "Đổi sang camera trước" : "Đổi sang camera sau"}
           </button>
+          <button type="button" class="btn btn-soft text-sm w-full sm:col-span-2" on:click={stopCameraStream}>Đóng camera</button>
         </div>
+      {/if}
 
-        <input bind:this={galleryInputRef} type="file" accept="image/*" class="hidden" on:change={onFileSelected} />
-        <input bind:this={cameraInputRef} type="file" accept="image/*" capture="environment" class="hidden" on:change={onFileSelected} />
+      {#if cameraError}
+        <p class="mt-2 rounded-xl border border-amber-200/80 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700">
+          {cameraError}
+        </p>
+      {/if}
 
-        {#if cameraOpen}
-          <div class="mt-3 overflow-hidden rounded-xl border border-pink-100 bg-black">
-            <video bind:this={cameraVideoRef} autoplay playsinline muted class="h-auto w-full object-cover"></video>
-          </div>
-          <p class="mt-2 text-xs text-[color:var(--ink2)]">
-            Đang dùng: {cameraFacing === "environment" ? "camera sau" : "camera trước"}
-          </p>
-          <div class="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
-            <button type="button" class="btn btn-primary text-sm w-full" on:click={captureCameraFrame}>Chụp ảnh</button>
-            <button type="button" class="btn btn-soft text-sm w-full" on:click={toggleCameraFacing} disabled={cameraBusy}>
-              {cameraBusy ? "Đang đổi camera..." : cameraFacing === "environment" ? "Đổi sang camera trước" : "Đổi sang camera sau"}
-            </button>
-            <button type="button" class="btn btn-soft text-sm w-full sm:col-span-2" on:click={stopCameraStream}>Đóng camera</button>
-          </div>
-        {/if}
-
-        {#if cameraError}
-          <p class="mt-2 rounded-xl border border-amber-200/80 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700">
-            {cameraError}
-          </p>
-        {/if}
-
-        {#if previewUrl}
-          <div class="mt-3 overflow-hidden rounded-xl border border-pink-100 bg-white">
-            <img src={previewUrl} alt="Xem trước ảnh" class="max-h-72 w-full object-contain" />
-          </div>
-        {/if}
-      </div>
-
-      <div>
-        <label class="label" for="upload_album">Chọn album</label>
-        <select id="upload_album" class="field mt-1 text-sm" bind:value={uploadAlbumId}>
-          {#each albums as album}
-            <option value={album.id}>{album.name}</option>
-          {/each}
-        </select>
-      </div>
-
-      <div>
-        <label class="label" for="upload_note">Ghi chú</label>
-        <textarea
-          id="upload_note"
-          class="field mt-1 min-h-[96px] text-sm"
-          maxlength="300"
-          bind:value={uploadNote}
-          placeholder="Viết vài dòng cho khoảnh khắc này..."
-        ></textarea>
-        <p class="mt-1 text-xs text-[color:var(--ink2)]">{uploadNote.length}/300 ký tự</p>
-      </div>
-
-      {#if uploadError}
-        <p class="rounded-xl border border-rose-200/80 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-600">{uploadError}</p>
+      {#if previewUrl}
+        <div class="mt-3 overflow-hidden rounded-xl border border-pink-100 bg-white">
+          <img src={previewUrl} alt="Xem trước ảnh" class="max-h-72 w-full object-contain" />
+        </div>
       {/if}
     </div>
 
-    <div class="flex justify-end gap-2 border-t border-pink-100/70 px-4 py-3">
-      <button type="button" class="btn btn-soft text-sm" on:click={closeUploadModal} disabled={uploadBusy}>Hủy</button>
-      <button type="button" class="btn btn-primary text-sm" on:click={uploadPhoto} disabled={uploadBusy}>
-        {uploadBusy ? "Đang tải..." : "Tải ảnh lên"}
-      </button>
-    </div>
-  </div>
-</div>
-
-<div class={`modal ${viewerOpen ? "open" : ""}`} aria-hidden={!viewerOpen} on:click|self={closePhotoViewer}>
-  <div class="modal-card flex max-h-[92vh] max-w-5xl flex-col" role="dialog" aria-modal="true" aria-labelledby="viewerTitle" tabindex="-1">
-    <div class="flex items-center justify-between border-b border-pink-100/70 px-4 py-3">
-      <div>
-        <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Xem ảnh</p>
-        <h3 id="viewerTitle" class="text-lg font-bold text-[color:var(--ink)]">{activeAlbum()?.name || "Album kỷ niệm"}</h3>
-      </div>
-      <button type="button" class="btn btn-soft text-sm" on:click={closePhotoViewer}>Đóng</button>
+    <div>
+      <label class="label" for="upload_album">Chọn album</label>
+      <select id="upload_album" class="field mt-1 text-sm" bind:value={uploadAlbumId}>
+        {#each albums as album}
+          <option value={album.id}>{album.name}</option>
+        {/each}
+      </select>
     </div>
 
-    {#if viewerPhoto}
-      <div class="space-y-3 px-3 py-3 sm:px-4">
-        <div class="flex min-h-[220px] max-h-[calc(92vh-14rem)] items-center justify-center overflow-hidden rounded-2xl border border-pink-100/80 bg-black/90">
-          <img src={viewerPhoto.image_url} alt={viewerPhoto.note || "Ảnh kỷ niệm"} class="max-h-[72vh] w-full object-contain" />
-        </div>
+    <div>
+      <label class="label" for="upload_note">Ghi chú</label>
+      <textarea
+        id="upload_note"
+        class="field mt-1 min-h-[96px] text-sm"
+        maxlength="300"
+        bind:value={uploadNote}
+        placeholder="Viết vài dòng cho khoảnh khắc này..."
+      ></textarea>
+      <p class="mt-1 text-xs text-[color:var(--ink2)]">{uploadNote.length}/300 ký tự</p>
+    </div>
 
-        <div class="grid grid-cols-1 items-center gap-2 rounded-2xl border border-pink-100/80 bg-white/80 px-3 py-2 sm:grid-cols-[minmax(0,1fr)_auto]">
-          <div class="min-w-0">
-            <p class="truncate text-sm font-semibold text-[color:var(--ink)]">{viewerPhoto.note || "Không có ghi chú"}</p>
-            <p class="mt-1 text-xs text-[color:var(--ink2)]">{formatDateTime(viewerPhoto.created_at)}</p>
-          </div>
-
-          {#if photos.length > 1}
-            <div class="grid w-full shrink-0 grid-cols-2 gap-2 sm:w-auto sm:flex">
-              <button type="button" class="btn btn-soft text-sm min-h-[40px] w-full sm:w-auto" on:click={showPrevPhoto}>← Trước</button>
-              <button type="button" class="btn btn-soft text-sm min-h-[40px] w-full sm:w-auto" on:click={showNextPhoto}>Sau →</button>
-            </div>
-          {/if}
-        </div>
-      </div>
+    {#if uploadError}
+      <p class="rounded-xl border border-rose-200/80 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-600">{uploadError}</p>
     {/if}
   </div>
-</div>
+
+</ModalShell>
+
+<ModalShell
+  open={viewerOpen}
+  close={closePhotoViewer}
+  showCancelAction={true}
+  cancelLabel="Đóng"
+  labelledBy="viewerTitle"
+  preset="modal-preset-gallery"
+  cardClass="flex max-h-[92vh] max-w-5xl flex-col"
+  bodyClass="modal-scroll space-y-3 px-3 py-3 sm:px-4"
+>
+  <div slot="header" class="flex items-center justify-between">
+    <div>
+      <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Xem ảnh</p>
+      <h3 id="viewerTitle" class="text-lg font-bold text-[color:var(--ink)]">{activeAlbum()?.name || "Album kỷ niệm"}</h3>
+    </div>
+    <!-- <button type="button" class="btn btn-soft text-sm" on:click={closePhotoViewer}>Đóng</button> -->
+  </div>
+
+  {#if viewerPhoto}
+    <div class="flex min-h-[220px] max-h-[calc(92vh-14rem)] items-center justify-center overflow-hidden rounded-2xl border border-pink-100/80 bg-black/90">
+      <img src={viewerPhoto.image_url} alt={viewerPhoto.note || "Ảnh kỷ niệm"} class="max-h-[72vh] w-full object-contain" />
+    </div>
+
+    <div class="grid grid-cols-1 items-center gap-2 rounded-2xl border border-pink-100/80 bg-white/80 px-3 py-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+      <div class="min-w-0">
+        <p class="truncate text-sm font-semibold text-[color:var(--ink)]">{viewerPhoto.note || "Không có ghi chú"}</p>
+        <p class="mt-1 text-xs text-[color:var(--ink2)]">{formatDateTime(viewerPhoto.created_at)}</p>
+      </div>
+
+      {#if photos.length > 1}
+        <div class="grid w-full shrink-0 grid-cols-2 gap-2 sm:w-auto sm:flex">
+          <button type="button" class="btn btn-soft text-sm min-h-[40px] w-full sm:w-auto" on:click={showPrevPhoto}>← Trước</button>
+          <button type="button" class="btn btn-soft text-sm min-h-[40px] w-full sm:w-auto" on:click={showNextPhoto}>Sau →</button>
+        </div>
+      {/if}
+    </div>
+  {/if}
+</ModalShell>
 
 <style>
   .gallery-section {

@@ -4,6 +4,7 @@
   import AuthProfileModal from "./AuthProfileModal.svelte";
   import AuthPairingMainSection from "./AuthPairingMainSection.svelte";
   import AuthProviderPickerModal from "./AuthProviderPickerModal.svelte";
+  import ModalShell from "./ModalShell.svelte";
   import { createAuthPairingController } from "../lingo/authPairingController.js";
 
   export let currentRoomId = "";
@@ -107,57 +108,53 @@
 
 <svelte:window on:keydown={controller.handleKeydown} />
 
-<div class={`modal ${open ? "open" : ""}`} aria-hidden={!open} on:click|self={controller.requestClose}>
-  <div
-    class="modal-card"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="pairingPanelTitle"
-    tabindex="-1"
-    style="max-width: 74rem;"
-  >
-    <div class="flex items-center justify-between border-b border-pink-100/70 px-4 py-3 sm:px-5">
-      <div>
-        <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Kết nối cặp đôi</p>
-        <h3 id="pairingPanelTitle" class="text-lg font-bold text-[color:var(--ink)]">Đăng nhập & ghép cặp</h3>
-      </div>
-      <button type="button" class="btn btn-soft text-sm" on:click={controller.requestClose}>Đóng</button>
+<ModalShell
+  open={open}
+  close={controller.requestClose}
+  labelledBy="pairingPanelTitle"
+  preset="modal-preset-form"
+  cardStyle="max-width: 74rem;"
+>
+  <div slot="header" class="flex items-center justify-between">
+    <div>
+      <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Kết nối cặp đôi</p>
+      <h3 id="pairingPanelTitle" class="text-lg font-bold text-[color:var(--ink)]">Đăng nhập & ghép cặp</h3>
     </div>
-    <div class="max-h-[78vh] overflow-y-auto px-4 py-4 sm:px-5">
-      <AuthPairingMainSection
-        ultraMinimal={ultraMinimal}
-        loading={loading}
-        authBusy={authBusy}
-        pairBusy={pairBusy}
-        me={me}
-        room={room}
-        joinCode={joinCode}
-        hasStartDate={hasStartDate}
-        infoText={infoText}
-        errorText={errorText}
-        detailsExpanded={detailsExpanded}
-        displayAccountName={displayAccountName}
-        syncStatus={syncStatus}
-        authConfigured={authConfigured}
-        canUsePasswordLogin={canUsePasswordLogin}
-        needsConnect={needsConnect}
-        providerName={controller.providerName}
-        providerIcon={controller.providerIcon}
-        on:refresh={controller.refreshAuthPairState}
-        on:logout={controller.logout}
-        on:opencredential={() => controller.openCredentialModal({ mode: "signin" })}
-        on:openprofile={() => controller.openProfileModal({ keepMessages: true })}
-        on:joincodeinput={(event) => controller.setJoinCode(event.detail)}
-        on:joinroom={controller.joinPairCode}
-        on:createroom={() => controller.createPairCode()}
-        on:toggledetails={controller.toggleDetails}
-        on:copylink={controller.copyRoomLink}
-        on:reconnect={controller.reconnectCurrentRoom}
-        on:openwizard={() => dispatch("openwizard")}
-      />
-    </div>
+    <!-- <button type="button" class="btn btn-soft text-sm" on:click={controller.requestClose}>Đóng</button> -->
   </div>
-</div>
+
+  <AuthPairingMainSection
+    ultraMinimal={ultraMinimal}
+    loading={loading}
+    authBusy={authBusy}
+    pairBusy={pairBusy}
+    me={me}
+    room={room}
+    joinCode={joinCode}
+    hasStartDate={hasStartDate}
+    infoText={infoText}
+    errorText={errorText}
+    detailsExpanded={detailsExpanded}
+    displayAccountName={displayAccountName}
+    syncStatus={syncStatus}
+    authConfigured={authConfigured}
+    canUsePasswordLogin={canUsePasswordLogin}
+    needsConnect={needsConnect}
+    providerName={controller.providerName}
+    providerIcon={controller.providerIcon}
+    on:refresh={controller.refreshAuthPairState}
+    on:logout={controller.logout}
+    on:opencredential={() => controller.openCredentialModal({ mode: "signin" })}
+    on:openprofile={() => controller.openProfileModal({ keepMessages: true })}
+    on:joincodeinput={(event) => controller.setJoinCode(event.detail)}
+    on:joinroom={controller.joinPairCode}
+    on:createroom={() => controller.createPairCode()}
+    on:toggledetails={controller.toggleDetails}
+    on:copylink={controller.copyRoomLink}
+    on:reconnect={controller.reconnectCurrentRoom}
+    on:openwizard={() => dispatch("openwizard")}
+  />
+</ModalShell>
 
 <AuthCredentialModal
   open={credentialModalOpen}

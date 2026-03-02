@@ -176,7 +176,12 @@
             </div>
 
             <div class="pinterest-tile">
-              <ProfilesSection state={$lingoState} meta={$lingoMeta} now={$lingoNow} on:quickedit={shell.openSettings} />
+              <ProfilesSection
+                state={$lingoState}
+                meta={$lingoMeta}
+                now={$lingoNow}
+                on:quickedit={() => shell.openWizard(false)}
+              />
             </div>
 
             <div class="pinterest-tile">

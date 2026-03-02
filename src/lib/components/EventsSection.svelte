@@ -1,5 +1,6 @@
 ﻿<script>
   import { createEventDispatcher } from "svelte";
+  import ModalShell from "./ModalShell.svelte";
   import {
     EVENT_CATEGORY_LABELS,
     formatDate,
@@ -168,44 +169,48 @@
 <svelte:window on:keydown={handleWindowKeydown} />
 
 <section class="card events-section rounded-3xl p-4 sm:p-5">
-  <div>
-    <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Ngày đặc biệt</p>
-    <h2 class="text-lg sm:text-xl font-bold text-[color:var(--ink)]">Quản lý ngày quan trọng</h2>
-    <p class="text-sm text-[color:var(--ink2)]">Thêm, sửa, xoá sự kiện; tự ưu tiên ngày gần nhất và làm nổi bật sự kiện hôm nay.</p>
-  </div>
-
-  {#if showQuickActions}
-    <div class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
-      <button
-        class={`btn text-sm w-full ${pairActionConnected ? "btn-soft" : "btn-primary"}`}
-        type="button"
-        on:click={() => dispatch("openpairing")}
-      >
-        {pairActionLabel}
-      </button>
-      <button class="btn btn-soft text-sm w-full" type="button" on:click={() => dispatch("opensettings")}>Cài đặt</button>
-      <button class="btn btn-primary text-sm w-full" type="button" on:click={() => dispatch("openwizard")}>Wizard nhanh</button>
+  <div class="events-head">
+    <div>
+      <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Ngày đặc biệt</p>
+      <h2 class="text-lg sm:text-xl font-bold text-[color:var(--ink)]">Quản lý ngày quan trọng</h2>
+      <p class="text-sm text-[color:var(--ink2)]">Thêm, sửa, xoá sự kiện; tự ưu tiên ngày gần nhất và làm nổi bật sự kiện hôm nay.</p>
     </div>
-  {/if}
+
+    {#if showQuickActions}
+      <div class="events-quick-actions">
+        <button
+          class={`btn text-sm w-full event-toolbar-btn ${pairActionConnected ? "btn-soft" : "btn-primary"}`}
+          type="button"
+          on:click={() => dispatch("openpairing")}
+        >
+          {pairActionLabel}
+        </button>
+        <button class="btn btn-soft text-sm w-full event-toolbar-btn" type="button" on:click={() => dispatch("opensettings")}>Cài đặt</button>
+        <button class="btn btn-primary text-sm w-full event-toolbar-btn" type="button" on:click={() => dispatch("openwizard")}>Wizard nhanh</button>
+      </div>
+    {/if}
+  </div>
 
   <div class="events-toolbar mt-4">
     <p class="text-sm font-semibold text-[color:var(--ink)]">Danh sách sự kiện</p>
-    <div class="events-toolbar-actions">
-      <button class="btn btn-primary !px-3.5 !py-1.5 text-xs min-h-[40px] w-full sm:w-auto whitespace-nowrap" type="button" on:click={openCreateEventModal}>
+    <div class="events-toolbar-controls">
+      <button class="btn btn-primary event-toolbar-btn events-toolbar-main !px-3.5 !py-1.5 text-xs whitespace-nowrap" type="button" on:click={openCreateEventModal}>
         + Thêm sự kiện
       </button>
-      <span class="pill h-10 text-[11px] font-semibold text-[color:var(--ink2)]">{countLabel}</span>
-      {#if hiddenCount > 0}
-        <button class="btn btn-soft relative !px-4 !py-2 text-xs font-semibold min-h-[40px] w-full sm:w-auto whitespace-nowrap" type="button" on:click={openEventsModal}>
-          Xem thêm
-          <span
-            class="badge-primary pointer-events-none absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold leading-none shadow-sm shadow-pink-300/60 ring-2 ring-white/90"
-            aria-label={`Còn ${hiddenCount} sự kiện`}
-          >
-            {hiddenCountBadge}
-          </span>
-        </button>
-      {/if}
+      <div class="events-toolbar-meta">
+        <span class="pill events-count-pill text-[11px] font-semibold text-[color:var(--ink2)]">{countLabel}</span>
+        {#if hiddenCount > 0}
+          <button class="btn btn-soft event-toolbar-btn event-more-btn text-xs font-semibold whitespace-nowrap" type="button" on:click={openEventsModal}>
+            Xem thêm
+            <span
+              class="badge-primary event-more-badge pointer-events-none inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold leading-none shadow-sm shadow-pink-300/60 ring-2 ring-white/90"
+              aria-label={`Còn ${hiddenCount} sự kiện`}
+            >
+              {hiddenCountBadge}
+            </span>
+          </button>
+        {/if}
+      </div>
     </div>
   </div>
 
@@ -216,10 +221,10 @@
       </div>
     {:else}
       {#each visibleRows as row (row.event.id)}
-        <article class={eventCardClass(row.info)}>
-          <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <article class={`${eventCardClass(row.info)} event-card`}>
+          <div class="event-card-layout">
             <div class="min-w-0">
-              <div class="flex flex-wrap items-center gap-2">
+              <div class="event-chip-row">
                 <span class="inline-flex items-center rounded-full border border-pink-200/80 bg-pink-50 px-2 py-0.5 text-xs font-semibold text-pink-700">
                   {EVENT_CATEGORY_LABELS[row.event.category] || "Khác"}
                 </span>
@@ -230,11 +235,11 @@
                   {eventStatusLabel(row.info)}
                 </span>
               </div>
-              <h3 class="mt-2 text-base font-bold text-[color:var(--ink)]">{row.event.title}</h3>
+              <h3 class="event-title mt-2 font-bold text-[color:var(--ink)]">{row.event.title}</h3>
               {#if row.event.note}
-                <p class="mt-1 text-sm text-[color:var(--ink2)]">{row.event.note}</p>
+                <p class="event-note mt-1 text-sm text-[color:var(--ink2)]">{row.event.note}</p>
               {/if}
-              <p class="mt-2 text-xs text-[color:var(--ink2)]">
+              <p class="event-meta mt-2 text-xs text-[color:var(--ink2)]">
                 Ngày gốc: {formatDate(parseDate(row.event.date))}
                 {#if row.event.repeatAnnual && row.info.occ}
                   • Lần tới: {formatDate(row.info.occ)}
@@ -245,9 +250,9 @@
               </p>
             </div>
 
-            <div class="grid grid-cols-2 gap-2 sm:flex sm:shrink-0">
-              <button class="btn btn-soft text-sm min-h-[40px] w-full sm:w-auto" type="button" on:click={() => openEditEventModal(row.event)}>Sửa</button>
-              <button class="btn btn-soft text-sm !text-rose-600 min-h-[40px] w-full sm:w-auto" type="button" on:click={() => removeEvent(row.event)}>Xoá</button>
+            <div class="event-actions">
+              <button class="btn btn-soft event-action-btn text-sm w-full sm:w-auto" type="button" on:click={() => openEditEventModal(row.event)}>Sửa</button>
+              <button class="btn btn-soft event-action-btn text-sm !text-rose-600 w-full sm:w-auto" type="button" on:click={() => removeEvent(row.event)}>Xoá</button>
             </div>
           </div>
         </article>
@@ -256,19 +261,31 @@
   </div>
 </section>
 
-<div class={`modal ${eventFormModalOpen ? "open" : ""}`} aria-hidden={!eventFormModalOpen} on:click|self={closeEventFormModal}>
-  <div class="modal-card max-w-2xl" role="dialog" aria-modal="true" aria-labelledby="eventFormModalTitle" tabindex="-1">
-    <div class="flex items-center justify-between border-b border-pink-100/70 px-4 py-3">
-      <div>
-        <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Ngày đặc biệt</p>
-        <h3 id="eventFormModalTitle" class="text-lg font-bold text-[color:var(--ink)]">
-          {editingId ? "Sửa sự kiện" : "Thêm ngày đặc biệt"}
-        </h3>
-      </div>
-      <button type="button" class="btn btn-soft text-sm" on:click={closeEventFormModal}>Đóng</button>
+<ModalShell
+  open={eventFormModalOpen}
+  close={closeEventFormModal}
+  labelledBy="eventFormModalTitle"
+  preset="modal-preset-sm"
+  maxWidth="max-w-2xl"
+  cardClass="events-form-modal-card"
+  bodyClass="events-form-body px-4 py-4"
+  showActions={true}
+  cancelLabel="Huỷ"
+  primaryLabel={editingId ? "Lưu chỉnh sửa" : "Thêm ngày đặc biệt"}
+  primaryType="submit"
+  primaryForm="eventForm"
+>
+  <div slot="header">
+    <div>
+      <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Ngày đặc biệt</p>
+      <h3 id="eventFormModalTitle" class="text-lg font-bold text-[color:var(--ink)]">
+        {editingId ? "Sửa sự kiện" : "Thêm ngày đặc biệt"}
+      </h3>
     </div>
+    <!-- <button type="button" class="btn btn-soft text-sm" on:click={closeEventFormModal}>Đóng</button> -->
+  </div>
 
-    <form class="space-y-3 px-4 py-4" on:submit|preventDefault={submitForm}>
+  <form id="eventForm" class="space-y-3" on:submit|preventDefault={submitForm}>
       <div>
         <label class="label" for="sv_ev_title">Tên sự kiện</label>
         <input id="sv_ev_title" class="field mt-1 text-sm" bind:value={title} maxlength="80" placeholder="Ví dụ: Kỷ niệm lần hẹn đầu" />
@@ -301,44 +318,42 @@
         <p class="text-sm font-medium text-rose-600">{errorText}</p>
       {/if}
 
-      <div class="flex flex-wrap justify-end gap-2 border-t border-pink-100/70 pt-3">
-        {#if editingId}
-          <button class="btn btn-soft text-sm" type="button" on:click={resetForm}>Làm mới</button>
-        {/if}
-        <button class="btn btn-soft text-sm" type="button" on:click={closeEventFormModal}>Huỷ</button>
-        <button class="btn btn-primary text-sm" type="submit">
-          {editingId ? "Lưu chỉnh sửa" : "Thêm ngày đặc biệt"}
-        </button>
-      </div>
-    </form>
-  </div>
-</div>
+  </form>
+</ModalShell>
 
-<div class={`modal ${eventsModalOpen ? "open" : ""}`} aria-hidden={!eventsModalOpen} on:click|self={closeEventsModal}>
-  <div class="modal-card max-w-4xl" role="dialog" aria-modal="true" aria-labelledby="eventsModalTitle" tabindex="-1">
-    <div class="flex items-center justify-between border-b border-pink-100/70 px-4 py-3">
-      <div>
-        <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Ngày đặc biệt</p>
-        <h3 id="eventsModalTitle" class="text-lg font-bold text-[color:var(--ink)]">Danh sách sự kiện</h3>
-      </div>
-      <div class="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
-        <span class="pill text-[11px] font-semibold text-[color:var(--ink2)]">{countLabel}</span>
-        <button class="btn btn-primary text-sm min-h-[40px] w-full sm:w-auto" type="button" on:click={() => openCreateEventModal()}>+ Thêm</button>
-        <button type="button" class="btn btn-soft text-sm min-h-[40px] w-full sm:w-auto" on:click={closeEventsModal}>Đóng</button>
-      </div>
+<ModalShell
+  open={eventsModalOpen}
+  close={closeEventsModal}
+  labelledBy="eventsModalTitle"
+  preset="modal-preset-gallery"
+  maxWidth="max-w-4xl"
+  cardClass="events-list-modal-card"
+  headerClass="events-modal-head flex items-center justify-between border-b border-pink-100/70 px-4 py-3"
+  bodyClass="events-modal-body max-h-[72vh] space-y-3 overflow-y-auto px-4 py-4"
+  showActions={true}
+  cancelLabel="Đóng"
+  primaryLabel="+ Thêm"
+  onPrimaryAction={openCreateEventModal}
+>
+  <div slot="header">
+    <div>
+      <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Ngày đặc biệt</p>
+      <h3 id="eventsModalTitle" class="text-lg font-bold text-[color:var(--ink)]">Danh sách sự kiện</h3>
+      <p class="mt-1 text-xs font-medium text-[color:var(--ink2)]">{countLabel}</p>
     </div>
+  </div>
 
-    <div class="max-h-[72vh] space-y-3 overflow-y-auto px-4 py-4">
+  <div>
       {#if displayRows.length === 0}
         <div class="rounded-2xl border border-white/70 bg-white/60 p-4 text-sm text-[color:var(--ink2)]">
           Chưa có sự kiện nào.
         </div>
       {:else}
         {#each displayRows as row (row.event.id)}
-          <article class={eventCardClass(row.info)}>
-            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <article class={`${eventCardClass(row.info)} event-card`}>
+            <div class="event-card-layout">
               <div class="min-w-0">
-                <div class="flex flex-wrap items-center gap-2">
+                <div class="event-chip-row">
                   <span class="inline-flex items-center rounded-full border border-pink-200/80 bg-pink-50 px-2 py-0.5 text-xs font-semibold text-pink-700">
                     {EVENT_CATEGORY_LABELS[row.event.category] || "Khác"}
                   </span>
@@ -349,11 +364,11 @@
                     {eventStatusLabel(row.info)}
                   </span>
                 </div>
-                <h3 class="mt-2 text-base font-bold text-[color:var(--ink)]">{row.event.title}</h3>
+                <h3 class="event-title mt-2 font-bold text-[color:var(--ink)]">{row.event.title}</h3>
                 {#if row.event.note}
-                  <p class="mt-1 text-sm text-[color:var(--ink2)]">{row.event.note}</p>
+                  <p class="event-note mt-1 text-sm text-[color:var(--ink2)]">{row.event.note}</p>
                 {/if}
-                <p class="mt-2 text-xs text-[color:var(--ink2)]">
+                <p class="event-meta mt-2 text-xs text-[color:var(--ink2)]">
                   Ngày gốc: {formatDate(parseDate(row.event.date))}
                   {#if row.event.repeatAnnual && row.info.occ}
                     • Lần tới: {formatDate(row.info.occ)}
@@ -364,23 +379,33 @@
                 </p>
               </div>
 
-              <div class="grid grid-cols-2 gap-2 sm:flex sm:shrink-0">
-                <button class="btn btn-soft text-sm min-h-[40px] w-full sm:w-auto" type="button" on:click={() => openEditEventModal(row.event, { closeListModal: true })}>
+              <div class="event-actions">
+                <button class="btn btn-soft event-action-btn text-sm w-full sm:w-auto" type="button" on:click={() => openEditEventModal(row.event, { closeListModal: true })}>
                   Sửa
                 </button>
-                <button class="btn btn-soft text-sm !text-rose-600 min-h-[40px] w-full sm:w-auto" type="button" on:click={() => removeEvent(row.event)}>Xoá</button>
+                <button class="btn btn-soft event-action-btn text-sm !text-rose-600 w-full sm:w-auto" type="button" on:click={() => removeEvent(row.event)}>Xoá</button>
               </div>
             </div>
           </article>
         {/each}
       {/if}
-    </div>
   </div>
-</div>
+</ModalShell>
 
 <style>
   .events-section {
     container-type: inline-size;
+  }
+
+  .events-head {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .events-quick-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
   }
 
   .events-toolbar {
@@ -391,23 +416,213 @@
     gap: 0.5rem;
   }
 
-  .events-toolbar-actions {
-    display: flex;
-    flex-wrap: wrap;
+  .events-toolbar-controls {
+    display: grid;
     gap: 0.5rem;
-    justify-content: flex-end;
     width: 100%;
   }
 
-  @media (min-width: 640px) {
+  .events-toolbar-main {
+    width: 100%;
+  }
+
+  .events-toolbar-meta {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .events-toolbar-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+    align-items: center;
+    width: 100%;
+  }
+
+  .event-toolbar-btn {
+    min-height: 2.5rem;
+  }
+
+  .events-count-pill {
+    min-height: 2.5rem;
+    justify-content: center;
+    white-space: nowrap;
+  }
+
+  .events-toolbar-controls .events-count-pill {
+    width: 100%;
+  }
+
+  .events-toolbar-actions .events-count-pill {
+    width: 100%;
+  }
+
+  .event-more-btn {
+    width: 100%;
+    position: relative;
+    padding-inline-start: 1rem;
+    padding-inline-end: 2.1rem;
+  }
+
+  .event-more-badge {
+    position: absolute;
+    inset-block-start: 0.35rem;
+    inset-inline-end: 0.45rem;
+  }
+
+  .event-card-layout {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .event-chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .event-title {
+    font-size: clamp(1rem, 0.95rem + 0.25cqi, 1.125rem);
+    line-height: 1.25;
+    word-break: break-word;
+  }
+
+  .event-note {
+    overflow-wrap: anywhere;
+  }
+
+  .event-meta {
+    line-height: 1.45;
+  }
+
+  .event-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+    align-items: start;
+  }
+
+  .event-action-btn {
+    min-height: 2.5rem;
+  }
+
+  .events-modal-head {
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .events-modal-body {
+    scroll-padding-block: 0.75rem;
+    padding-bottom: max(1rem, calc(env(safe-area-inset-bottom) + 0.65rem)) !important;
+  }
+
+  .events-form-body {
+    max-height: min(76vh, calc(100dvh - 8rem));
+    overflow-y: auto;
+    padding-bottom: max(1rem, calc(env(safe-area-inset-bottom) + 0.65rem)) !important;
+    scroll-padding-bottom: max(1rem, calc(env(safe-area-inset-bottom) + 0.65rem));
+  }
+
+  .events-form-modal-card,
+  .events-list-modal-card {
+    padding-bottom: max(0.3rem, env(safe-area-inset-bottom));
+  }
+
+  @container (min-width: 30rem) {
+    .events-toolbar-controls {
+      grid-template-columns: auto auto;
+      justify-content: end;
+      width: auto;
+    }
+
+    .events-toolbar-main {
+      width: auto;
+    }
+
+    .events-toolbar-meta {
+      grid-template-columns: auto auto;
+      align-items: center;
+      width: auto;
+    }
+
+    .events-toolbar-controls .events-count-pill {
+      width: auto;
+      min-width: 6.5rem;
+    }
+
+    .event-more-btn {
+      width: auto;
+      padding-inline-start: 1rem;
+      padding-inline-end: 2rem;
+    }
+
     .events-toolbar-actions {
+      grid-template-columns: repeat(3, minmax(0, max-content));
+      justify-content: end;
+      width: auto;
+    }
+
+    .events-toolbar-actions .events-count-pill {
+      width: auto;
+      min-width: 6.5rem;
+    }
+
+    .event-card-layout {
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: start;
+      gap: 0.75rem 1rem;
+    }
+
+    .event-actions {
+      grid-auto-flow: column;
+      grid-template-columns: repeat(2, minmax(0, max-content));
+      justify-content: end;
+    }
+
+    .event-actions .btn {
       width: auto;
     }
   }
 
-  @container (max-width: 28rem) {
-    .events-toolbar-actions {
-      justify-content: flex-start;
+  @container (min-width: 42rem) {
+    .events-head {
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: end;
+      gap: 1rem;
+    }
+
+    .events-quick-actions {
+      grid-template-columns: repeat(3, minmax(7.5rem, 1fr));
+    }
+
+    .events-modal-head {
+      flex-wrap: nowrap;
+      align-items: center;
+    }
+  }
+
+  @container (max-width: 24rem) {
+    .events-toolbar-meta {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .events-toolbar-controls .events-count-pill,
+    .event-more-btn {
+      width: 100%;
+    }
+
+    .event-actions {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (min-width: 640px) {
+    .events-form-body {
+      max-height: 78vh;
     }
   }
 </style>

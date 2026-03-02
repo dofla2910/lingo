@@ -1,6 +1,7 @@
 <script>
   import { createEventDispatcher } from "svelte";
   import { formatDateTime } from "../lingo/utils.js";
+  import ModalShell from "./ModalShell.svelte";
 
   export let open = false;
   export let milestone = null;
@@ -56,53 +57,52 @@
 
 <svelte:window on:keydown={handleKeydown} />
 
-<div class={`modal ${open ? "open" : ""}`} aria-hidden={!open} on:click|self={closeModal}>
-  <div
-    class="modal-card max-w-xl"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="celebrateTitle"
-    tabindex="-1"
-  >
-    <div class="relative overflow-hidden px-5 py-5 sm:px-6 sm:py-6">
-      <div class="cele-wrap" aria-hidden="true">
-        {#each pieces as piece (piece.idx)}
-          <span
-            class="cele-piece"
-            style={`--tx:${piece.tx};--ty:${piece.ty};--rot:${piece.rot};animation-delay:${piece.delay};font-size:${piece.size};`}
-          >
-            {piece.symbol}
-          </span>
-        {/each}
+<ModalShell
+  open={open}
+  close={closeModal}
+  labelledBy="celebrateTitle"
+  preset="modal-preset-sm"
+  maxWidth="max-w-xl"
+  bodyClass="modal-body relative overflow-hidden px-5 py-5 sm:px-6 sm:py-6"
+  showActions={true}
+  showCancelAction={false}
+  primaryLabel="Yay!"
+  onPrimaryAction={closeModal}
+>
+  <div class="cele-wrap" aria-hidden="true">
+    {#each pieces as piece (piece.idx)}
+      <span
+        class="cele-piece"
+        style={`--tx:${piece.tx};--ty:${piece.ty};--rot:${piece.rot};animation-delay:${piece.delay};font-size:${piece.size};`}
+      >
+        {piece.symbol}
+      </span>
+    {/each}
+  </div>
+
+  <div class="relative z-[1]">
+    <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Chúc mừng</p>
+    <h2 id="celebrateTitle" class="mt-1 text-xl sm:text-2xl font-extrabold text-[color:var(--ink)]">
+      {milestone ? `Đạt cột mốc ${milestone.label}!` : "Đạt cột mốc tình yêu!"}
+    </h2>
+    <p class="mt-2 text-sm text-[color:var(--ink2)]">
+      Hai bạn vừa chinh phục thêm một chặng đường đáng nhớ trong hành trình yêu thương.
+    </p>
+
+    {#if milestone?.date}
+      <div class="mt-4 rounded-2xl border border-white/80 bg-white/70 p-4">
+        <p class="text-sm text-[color:var(--ink2)]">Thời điểm đạt cột mốc</p>
+        <p class="mt-1 text-base font-bold text-[color:var(--ink)]">{formatDateTime(milestone.date)}</p>
       </div>
+    {/if}
 
-      <div class="relative z-[1]">
-        <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Chúc mừng</p>
-        <h2 id="celebrateTitle" class="mt-1 text-xl sm:text-2xl font-extrabold text-[color:var(--ink)]">
-          {milestone ? `Đạt cột mốc ${milestone.label}!` : "Đạt cột mốc tình yêu!"}
-        </h2>
-        <p class="mt-2 text-sm text-[color:var(--ink2)]">
-          Hai bạn vừa chinh phục thêm một chặng đường đáng nhớ trong hành trình yêu thương.
-        </p>
-
-        {#if milestone?.date}
-          <div class="mt-4 rounded-2xl border border-white/80 bg-white/70 p-4">
-            <p class="text-sm text-[color:var(--ink2)]">Thời điểm đạt cột mốc</p>
-            <p class="mt-1 text-base font-bold text-[color:var(--ink)]">{formatDateTime(milestone.date)}</p>
-          </div>
-        {/if}
-
-        <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
-          <div class="flex items-center gap-2 text-sm text-[color:var(--ink2)]">
-            <span class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-pink-200/80 bg-pink-50 text-lg">
-              🦩🏆
-            </span>
-            <span>{queueCount > 0 ? `Còn ${queueCount} cột mốc đang chờ chúc mừng` : "Tiếp tục giữ lửa yêu thương nhé"}</span>
-          </div>
-          <button type="button" class="btn btn-primary text-sm" on:click={closeModal}>Yay!</button>
-        </div>
+    <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-2 text-sm text-[color:var(--ink2)]">
+        <span class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-pink-200/80 bg-pink-50 text-lg">
+          🦩🏆
+        </span>
+        <span>{queueCount > 0 ? `Còn ${queueCount} cột mốc đang chờ chúc mừng` : "Tiếp tục giữ lửa yêu thương nhé"}</span>
       </div>
     </div>
   </div>
-</div>
-
+</ModalShell>

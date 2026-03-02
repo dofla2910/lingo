@@ -1,5 +1,6 @@
-﻿<script>
+<script>
   import { createEventDispatcher } from "svelte";
+  import ModalShell from "./ModalShell.svelte";
 
   export let open = false;
   export let state;
@@ -133,63 +134,67 @@
 
 <svelte:window on:keydown={handleKeydown} />
 
-<div class={`modal ${open ? "open" : ""}`} aria-hidden={!open} on:click|self={requestClose}>
-  <div class="modal-card max-w-3xl" role="dialog" aria-modal="true" aria-labelledby="settingsTitle" tabindex="-1">
-    <div class="flex items-center justify-between border-b border-pink-100/70 px-4 py-3 sm:px-5">
-      <div>
-        <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Cài đặt</p>
-        <h2 id="settingsTitle" class="text-lg font-bold text-[color:var(--ink)]">Cài đặt font hệ thống</h2>
-      </div>
-      <button type="button" class="btn btn-soft text-sm" on:click={requestClose}>Đóng</button>
+<ModalShell
+  open={open}
+  close={requestClose}
+  labelledBy="settingsTitle"
+  preset="modal-preset-form"
+  maxWidth="max-w-3xl"
+  showActions={true}
+  cancelLabel="Huỷ"
+  primaryLabel={busy ? "Đang lưu..." : "Lưu thay đổi"}
+  cancelDisabled={busy}
+  primaryDisabled={busy}
+  onPrimaryAction={save}
+>
+  <div slot="header" class="flex items-center justify-between">
+    <div>
+      <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Cài đặt</p>
+      <h2 id="settingsTitle" class="text-lg font-bold text-[color:var(--ink)]">Cài đặt font hệ thống</h2>
     </div>
-
-    <div class="max-h-[78vh] overflow-y-auto px-4 py-4 sm:px-5">
-      <p class="text-sm text-[color:var(--ink2)]">Chọn kiểu chữ dùng cho toàn bộ giao diện.</p>
-
-      <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {#each FONT_OPTIONS as option}
-          <label
-            class={`flex cursor-pointer flex-col gap-2 rounded-2xl border p-3 transition ${
-              systemFont === option.id
-                ? "border-pink-300 bg-pink-50/80 shadow-sm shadow-pink-100"
-                : "border-pink-100/70 bg-white/70 hover:border-pink-200"
-            }`}
-            style={option.cardStyle}
-          >
-            <span class="flex items-start gap-3">
-              <input
-                class="mt-1 h-4 w-4 accent-pink-500"
-                type="radio"
-                name="system_font"
-                value={option.id}
-                bind:group={systemFont}
-              />
-              <span>
-                <span class="block text-sm font-semibold text-[color:var(--ink)]">{option.label}</span>
-                <span class="block text-xs text-[color:var(--ink2)]">{option.desc}</span>
-              </span>
-            </span>
-
-            <div class="rounded-xl border border-white/80 bg-white/80 px-3 py-2">
-              <p class="text-base leading-tight text-[color:var(--ink)]" style={option.titleStyle}>{option.previewTitle}</p>
-              <p class="mt-1 text-xs text-[color:var(--ink2)]" style={option.bodyStyle}>{option.previewBody}</p>
-            </div>
-          </label>
-        {/each}
-      </div>
-
-      {#if errorText}
-        <p class="mt-4 rounded-xl border border-rose-200/80 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-600">
-          {errorText}
-        </p>
-      {/if}
-    </div>
-
-    <div class="flex justify-end gap-2 border-t border-pink-100/70 px-4 py-3 sm:px-5">
-      <button type="button" class="btn btn-soft text-sm" on:click={requestClose}>Huỷ</button>
-      <button type="button" class="btn btn-primary text-sm" on:click={save} disabled={busy}>
-        {busy ? "Đang lưu..." : "Lưu thay đổi"}
-      </button>
-    </div>
+    <button type="button" class="btn btn-soft text-sm" on:click={requestClose}>Đóng</button>
   </div>
-</div>
+
+  <div>
+    <p class="text-sm text-[color:var(--ink2)]">Chọn kiểu chữ dùng cho toàn bộ giao diện.</p>
+
+    <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {#each FONT_OPTIONS as option}
+        <label
+          class={`flex cursor-pointer flex-col gap-2 rounded-2xl border p-3 transition ${
+            systemFont === option.id
+              ? "border-pink-300 bg-pink-50/80 shadow-sm shadow-pink-100"
+              : "border-pink-100/70 bg-white/70 hover:border-pink-200"
+          }`}
+          style={option.cardStyle}
+        >
+          <span class="flex items-start gap-3">
+            <input
+              class="mt-1 h-4 w-4 accent-pink-500"
+              type="radio"
+              name="system_font"
+              value={option.id}
+              bind:group={systemFont}
+            />
+            <span>
+              <span class="block text-sm font-semibold text-[color:var(--ink)]">{option.label}</span>
+              <span class="block text-xs text-[color:var(--ink2)]">{option.desc}</span>
+            </span>
+          </span>
+
+          <div class="rounded-xl border border-white/80 bg-white/80 px-3 py-2">
+            <p class="text-base leading-tight text-[color:var(--ink)]" style={option.titleStyle}>{option.previewTitle}</p>
+            <p class="mt-1 text-xs text-[color:var(--ink2)]" style={option.bodyStyle}>{option.previewBody}</p>
+          </div>
+        </label>
+      {/each}
+    </div>
+
+    {#if errorText}
+      <p class="mt-4 rounded-xl border border-rose-200/80 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-600">
+        {errorText}
+      </p>
+    {/if}
+  </div>
+
+</ModalShell>

@@ -241,9 +241,34 @@
       max-height:92vh;
       max-block-size:92vh;
       block-size:auto;
+      display:flex;
+      flex-direction:column;
       overflow:hidden;
       border-radius:1.4rem;background:linear-gradient(180deg,rgba(255,255,255,.95),rgba(255,247,251,.92));
       border:1px solid rgba(255,218,234,.8);box-shadow:0 22px 60px rgba(229,113,161,.24)
+    }
+    .modal-body{
+      padding-bottom:max(1rem, calc(env(safe-area-inset-bottom) + .45rem));
+    }
+    .modal-scroll{
+      flex:1 1 auto;
+      min-height:0;
+      overflow-y:auto;
+      overscroll-behavior:contain;
+      -webkit-overflow-scrolling:touch;
+      touch-action:pan-y;
+      padding-bottom:max(1rem, calc(env(safe-area-inset-bottom) + .45rem));
+      scroll-padding-bottom:max(1rem, calc(env(safe-area-inset-bottom) + .45rem));
+    }
+    .modal-card .overflow-y-auto,
+    .modal-card .overflow-auto{
+      padding-bottom:max(1rem, calc(env(safe-area-inset-bottom) + .45rem));
+      scroll-padding-bottom:max(1rem, calc(env(safe-area-inset-bottom) + .45rem));
+    }
+    @media (max-width:639px){
+      .modal-card{
+        padding-bottom:max(.45rem, env(safe-area-inset-bottom));
+      }
     }
     @supports (block-size: calc-size(auto, size)) {
       .modal-card{
