@@ -1,4 +1,5 @@
 <script>
+  import { get } from "svelte/store";
   import { onDestroy, onMount } from "svelte";
   import TimerSection from "./lib/components/TimerSection.svelte";
   import NextMilestoneSection from "./lib/components/NextMilestoneSection.svelte";
@@ -6,6 +7,8 @@
   import MilestonesSection from "./lib/components/MilestonesSection.svelte";
   import GalleryTogetherSection from "./lib/components/GalleryTogetherSection.svelte";
   import TimeCapsuleSection from "./lib/components/TimeCapsuleSection.svelte";
+  import HeartbeatSection from "./lib/components/HeartbeatSection.svelte";
+  import HeartRain from "./lib/components/HeartRain.svelte";
   import EventsSection from "./lib/components/EventsSection.svelte";
   import AuthPairingPanel from "./lib/components/AuthPairingPanel.svelte";
   import AmbientLayer from "./lib/components/AmbientLayer.svelte";
@@ -20,6 +23,7 @@
   import AppFooterCard from "./lib/components/AppFooterCard.svelte";
   import AppBootstrapSkeleton from "./lib/components/AppBootstrapSkeleton.svelte";
   import AppBootstrapTimeoutCard from "./lib/components/AppBootstrapTimeoutCard.svelte";
+  import { showPingNotification } from "./lib/lingo/pingNotifications.js";
   import { createAppShellController } from "./lib/lingo/appShellController.js";
   import {
     destroyLingoSharedStateBridge,
@@ -27,6 +31,8 @@
     lingoActions,
     lingoMeta,
     lingoNow,
+    lingoPing,
+    lingoPingStats,
     lingoState,
   } from "./lib/lingo/store.js";
 
@@ -34,7 +40,13 @@
   let toastMessage = "";
   let toastTimer;
   let authPairingPanelRef;
+  let heartRainRef;
   let retryBootstrapBusy = false;
+  let pingBusy = false;
+  let lastHandledPingId = "";
+  let pendingPingCount = 0;
+  let pendingPingMessage = "";
+  let removeVisibilityListener = () => {};
 
   function showToast(message, ms = 2200) {
     toastMessage = message;
@@ -55,6 +67,64 @@
     }
   }
 
+  function formatPingClock(value) {
+    const date = new Date(value || Date.now());
+    if (Number.isNaN(date.getTime())) return "--:--";
+    return new Intl.DateTimeFormat("vi-VN", {
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(date);
+  }
+
+  function flushPendingPingUi() {
+    if (pendingPingCount <= 0) return;
+    const message =
+      pendingPingCount === 1
+        ? pendingPingMessage
+        : `Bạn có ${pendingPingCount} Nút chạm mới.`;
+    heartRainRef?.burst?.(Math.min(28, 10 + pendingPingCount * 2));
+    showToast(message, 3200);
+    pendingPingCount = 0;
+    pendingPingMessage = "";
+  }
+
+  async function handleSendPing() {
+    if (pingBusy) return;
+    const snapshot = get(viewModel);
+    const meta = get(lingoMeta);
+    if (!snapshot?.hasRoom) {
+      showToast("Hãy kết nối phòng để dùng Nút chạm.");
+      return;
+    }
+
+    pingBusy = true;
+    try {
+      await lingoActions.sendPing(snapshot.roomId, meta?.myUserId || "");
+      heartRainRef?.burst?.(9);
+      showToast("Đã gửi một nhịp yêu thương.");
+    } catch (err) {
+      showToast(err?.message || "Không thể gửi Nút chạm.");
+    } finally {
+      pingBusy = false;
+    }
+  }
+
+  async function handleIncomingPing(ping) {
+    const senderName = String(ping?.senderName || "").trim() || "Người ấy";
+    const message = `${senderName} vừa nhớ bạn lúc ${formatPingClock(ping?.createdAt)}`;
+    const hidden = typeof document !== "undefined" && document.visibilityState === "hidden";
+
+    if (hidden) {
+      pendingPingCount += 1;
+      pendingPingMessage = message;
+      await showPingNotification("Lingo • Nút chạm", message);
+      return;
+    }
+
+    heartRainRef?.burst?.(16);
+    showToast(message, 3000);
+  }
+
   const shell = createAppShellController({
     lingoState,
     lingoMeta,
@@ -71,12 +141,27 @@
 
   onMount(() => {
     shell.mount();
+    if (typeof document !== "undefined") {
+      const onVisibilityChange = () => {
+        if (document.visibilityState === "visible") {
+          flushPendingPingUi();
+        }
+      };
+      document.addEventListener("visibilitychange", onVisibilityChange);
+      removeVisibilityListener = () => document.removeEventListener("visibilitychange", onVisibilityChange);
+    }
   });
 
   onDestroy(() => {
     clearTimeout(toastTimer);
+    removeVisibilityListener();
     shell.destroy();
   });
+
+  $: if ($lingoPing?.id && $lingoPing.id !== lastHandledPingId) {
+    lastHandledPingId = $lingoPing.id;
+    handleIncomingPing($lingoPing);
+  }
 </script>
 
 <a href="#mainContent" class="skip-link">Bỏ qua đến nội dung chính</a>
@@ -89,6 +174,7 @@
 </noscript>
 
 <AmbientLayer />
+<HeartRain bind:this={heartRainRef} />
 
 {#if $viewModel.isPrivacyRoute}
   <PrivacyPolicyPage />
@@ -124,6 +210,16 @@
                 on:opensettings={shell.openSettings}
                 on:openwizard={() => shell.openWizard(false)}
                 on:toast={(e) => showToast(e.detail)}
+              />
+            </div>
+
+            <div class="pinterest-tile">
+              <HeartbeatSection
+                hasRoom={$viewModel.hasRoom}
+                roomId={$viewModel.roomId}
+                pingBusy={pingBusy}
+                stats={$lingoPingStats}
+                on:ping={handleSendPing}
               />
             </div>
 
