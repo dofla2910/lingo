@@ -110,14 +110,18 @@
   }
 
   async function handleIncomingPing(ping) {
-    const senderName = String(ping?.senderName || "").trim() || "Người ấy";
-    const message = `${senderName} vừa nhớ bạn lúc ${formatPingClock(ping?.createdAt)}`;
+    const senderName = String(ping?.senderName || "").trim() || "Ng\u01b0\u1eddi \u1ea5y";
+    const missedCount = Number(ping?.missedCount || 0);
+    const message =
+      missedCount > 1
+        ? `B\u1ea1n c\u00f3 ${missedCount} N\u00fat ch\u1ea1m m\u1edbi t\u1eeb ${senderName}.`
+        : `${senderName} v\u1eeba nh\u1edb b\u1ea1n l\u00fac ${formatPingClock(ping?.createdAt)}`;
     const hidden = typeof document !== "undefined" && document.visibilityState === "hidden";
 
     if (hidden) {
-      pendingPingCount += 1;
+      pendingPingCount += Math.max(1, missedCount);
       pendingPingMessage = message;
-      await showPingNotification("Lingo • Nút chạm", message);
+      await showPingNotification("Lingo \u2022 N\u00fat ch\u1ea1m", message);
       return;
     }
 

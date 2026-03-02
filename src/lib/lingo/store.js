@@ -17,6 +17,7 @@ import {
   sanitizeRoomCode,
   supabase,
 } from "./supabaseClient.js";
+import { invokeSendPingPush, syncPushSubscriptionForRoom } from "./webPushClient.js";
 
 const stateStore = writable(createDefaultState());
 const metaStore = writable({
@@ -58,6 +59,7 @@ const remote = {
   lastPingId: "",
   myUserId: "",
   seenPingIds: new Set(),
+  lastSeenPingAtMs: 0,
   draftState: null,
 };
 
@@ -76,6 +78,50 @@ function createEmptyPingStats(dateKey = currentDateKey()) {
     todaySent: 0,
     todayReceived: 0,
   };
+}
+
+const PING_SEEN_KEY_PREFIX = "lingo_ping_seen_v1";
+
+function buildPingSeenStorageKey(roomUuid, userId) {
+  const safeRoom = String(roomUuid || "").trim();
+  const safeUser = String(userId || "").trim();
+  if (!safeRoom || !safeUser) return "";
+  return `${PING_SEEN_KEY_PREFIX}:${safeRoom}:${safeUser}`;
+}
+
+function readPingSeenMs(roomUuid, userId) {
+  if (typeof window === "undefined" || !window.localStorage) return 0;
+  const key = buildPingSeenStorageKey(roomUuid, userId);
+  if (!key) return 0;
+
+  try {
+    const raw = window.localStorage.getItem(key);
+    const ts = Date.parse(String(raw || ""));
+    return Number.isFinite(ts) ? ts : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function persistPingSeenMs(roomUuid, userId, nextMs) {
+  if (typeof window === "undefined" || !window.localStorage) return;
+  const key = buildPingSeenStorageKey(roomUuid, userId);
+  if (!key || !Number.isFinite(nextMs) || nextMs <= 0) return;
+
+  try {
+    window.localStorage.setItem(key, new Date(nextMs).toISOString());
+  } catch {
+    // ignore storage failures in private mode / restricted contexts
+  }
+}
+
+function markPingSeenAt(createdAt, roomUuid = remote.roomUuid, userId = remote.myUserId) {
+  const ts = Date.parse(String(createdAt || ""));
+  if (!Number.isFinite(ts)) return;
+  if (ts <= remote.lastSeenPingAtMs) return;
+
+  remote.lastSeenPingAtMs = ts;
+  persistPingSeenMs(roomUuid, userId, ts);
 }
 
 function getTodayIsoRange(nowTs = Date.now()) {
@@ -201,6 +247,7 @@ function setDraftState(nextState, message = "") {
   remote.lastPingId = "";
   remote.myUserId = "";
   remote.seenPingIds = new Set();
+  remote.lastSeenPingAtMs = 0;
   pingStore.set(null);
   pingStatsStore.set(createEmptyPingStats());
   setMeta({
@@ -244,6 +291,7 @@ function pushIncomingPing(raw) {
   const myUserId = String(meta?.myUserId || remote.myUserId || "").trim();
   if (myUserId && senderId === myUserId && !allowSelfPingForDebug()) return;
 
+  markPingSeenAt(raw?.created_at);
   remote.lastPingId = pingId;
   pingStore.set({
     id: pingId,
@@ -291,6 +339,45 @@ async function initPingStatsForToday(client, roomUuid, myUserId = "") {
     console.warn("[Lingo Ping] Skip today stats bootstrap:", err?.message || err);
     remote.seenPingIds = new Set();
     pingStatsStore.set(createEmptyPingStats());
+  }
+}
+
+async function fetchMissedPingsSinceLastSeen(client, roomUuid, myUserId = "") {
+  const safeRoomUuid = String(roomUuid || "").trim();
+  const safeMyUserId = String(myUserId || "").trim();
+  if (!client || !safeRoomUuid || !safeMyUserId) return [];
+
+  // First-time on this device: seed watermark "now" to avoid replaying old history.
+  const storedSeenMs = readPingSeenMs(safeRoomUuid, safeMyUserId);
+  if (!storedSeenMs) {
+    const nowMs = Date.now();
+    remote.lastSeenPingAtMs = nowMs;
+    persistPingSeenMs(safeRoomUuid, safeMyUserId, nowMs);
+    return [];
+  }
+
+  remote.lastSeenPingAtMs = storedSeenMs;
+  const seenIso = new Date(storedSeenMs).toISOString();
+
+  try {
+    const { data, error } = await client
+      .from("lingo_pings")
+      .select("id,sender_id,created_at")
+      .eq("room_id", safeRoomUuid)
+      .neq("sender_id", safeMyUserId)
+      .gt("created_at", seenIso)
+      .order("created_at", { ascending: true })
+      .limit(50);
+    if (error) throw error;
+    const rows = Array.isArray(data) ? data : [];
+    if (rows.length > 0) {
+      const newest = rows[rows.length - 1];
+      markPingSeenAt(newest?.created_at, safeRoomUuid, safeMyUserId);
+    }
+    return rows;
+  } catch (err) {
+    console.warn("[Lingo Ping] Skip missed ping catch-up:", err?.message || err);
+    return [];
   }
 }
 
@@ -514,6 +601,7 @@ async function connectToRoomByCode(client, code) {
   remote.lastPingId = "";
   pingStore.set(null);
   await initPingStatsForToday(client, remote.roomUuid, remote.myUserId);
+  const missedRows = await fetchMissedPingsSinceLastSeen(client, remote.roomUuid, remote.myUserId);
   await attachRoomStateChannel(client, remote.roomUuid);
   try {
     await attachPingChannel(client, remote.roomUuid);
@@ -532,34 +620,80 @@ async function connectToRoomByCode(client, code) {
     error: "",
     source: "supabase-postgres",
   });
+
+  syncPushSubscriptionForRoom(client, remote.roomUuid, remote.myUserId, {
+    promptPermission: true,
+  }).catch((err) => {
+    console.warn("[Lingo Push] subscription sync failed:", err?.message || err);
+  });
+
+  if (Array.isArray(missedRows) && missedRows.length > 0) {
+    const newest = missedRows[missedRows.length - 1];
+    const newestId = String(newest?.id || "").trim();
+    const eventId = newestId ? `missed:${newestId}` : `missed:${Date.now()}`;
+    remote.lastPingId = eventId;
+    pingStore.set({
+      id: eventId,
+      senderId: String(newest?.sender_id || "").trim(),
+      senderName: resolveMemberNameByUserId(
+        { ownerProfile: memberProfiles.ownerProfile, partnerProfile: memberProfiles.partnerProfile },
+        newest?.sender_id,
+      ),
+      createdAt: newest?.created_at || new Date().toISOString(),
+      receivedAt: Date.now(),
+      missedCount: missedRows.length,
+    });
+  }
 }
 
 export async function sendPing(roomId = "", myUserId = "") {
   const client = remote.client || supabase;
-  if (!client) throw new Error("Supabase chưa sẵn sàng.");
+  if (!client) throw new Error("Supabase ch\u01b0a s\u1eb5n s\u00e0ng.");
 
-  const targetRoomCode = sanitizeRoomCode(roomId || remote.roomCode || currentMeta().roomId || "");
-  if (!targetRoomCode) throw new Error("Chưa có phòng để gửi Nút chạm.");
+  const metaSnapshot = currentMeta();
+  const warmRoomUuid = String(remote.roomUuid || "").trim();
+  const warmUserId = String(myUserId || metaSnapshot?.myUserId || remote.myUserId || "").trim();
+  if (warmRoomUuid && warmUserId) {
+    syncPushSubscriptionForRoom(client, warmRoomUuid, warmUserId, {
+      promptPermission: true,
+    }).catch(() => {});
+  }
+
+  const targetRoomCode = sanitizeRoomCode(roomId || remote.roomCode || metaSnapshot.roomId || "");
+  if (!targetRoomCode) throw new Error("Ch\u01b0a c\u00f3 ph\u00f2ng \u0111\u1ec3 g\u1eedi N\u00fat ch\u1ea1m.");
 
   let targetRoomUuid = String(remote.roomUuid || "").trim();
   if (!targetRoomUuid || targetRoomCode !== remote.roomCode) {
     const roomRow = await fetchRoomRowForCurrentMember(client, targetRoomCode);
     targetRoomUuid = String(roomRow?.id || "").trim();
   }
-  if (!targetRoomUuid) throw new Error("Không tìm thấy phòng dữ liệu để gửi Nút chạm.");
+  if (!targetRoomUuid) throw new Error("Kh\u00f4ng t\u00ecm th\u1ea5y ph\u00f2ng d\u1eef li\u1ec7u \u0111\u1ec3 g\u1eedi N\u00fat ch\u1ea1m.");
 
-  let senderId = String(myUserId || currentMeta().myUserId || "").trim();
+  let senderId = String(myUserId || metaSnapshot.myUserId || "").trim();
   if (!senderId) {
     senderId = String((await getCurrentAuthUser(client).catch(() => null))?.id || "").trim();
   }
-  if (!senderId) throw new Error("Vui lòng đăng nhập trước khi gửi Nút chạm.");
+  if (!senderId) throw new Error("Vui l\u00f2ng \u0111\u0103ng nh\u1eadp tr\u01b0\u1edbc khi g\u1eedi N\u00fat ch\u1ea1m.");
 
-  const { error } = await client
-    .from("lingo_pings")
-    .insert({ room_id: targetRoomUuid, sender_id: senderId });
+  const createdAt = new Date().toISOString();
+  const { error } = await client.from("lingo_pings").insert({
+    room_id: targetRoomUuid,
+    sender_id: senderId,
+    created_at: createdAt,
+  });
   if (error) {
-    throw new Error(friendlySupabaseError(error, "Không thể gửi Nút chạm."));
+    throw new Error(friendlySupabaseError(error, "Kh\u00f4ng th\u1ec3 g\u1eedi N\u00fat ch\u1ea1m."));
   }
+
+  const senderName = resolveMemberNameByUserId(metaSnapshot, senderId);
+  invokeSendPingPush(client, {
+    roomId: targetRoomUuid,
+    roomCode: targetRoomCode,
+    senderId,
+    senderName,
+    createdAt,
+  }).catch(() => {});
+
   return true;
 }
 
@@ -779,6 +913,7 @@ export async function initLingoSharedStateBridge() {
         remote.lastPingId = "";
         remote.myUserId = "";
         remote.seenPingIds = new Set();
+        remote.lastSeenPingAtMs = 0;
         pingStore.set(null);
         pingStatsStore.set(createEmptyPingStats());
         setMeta({
@@ -819,6 +954,7 @@ export async function initLingoSharedStateBridge() {
       remote.lastPingId = "";
       remote.myUserId = "";
       remote.seenPingIds = new Set();
+      remote.lastSeenPingAtMs = 0;
       pingStore.set(null);
       pingStatsStore.set(createEmptyPingStats());
       reject(err);
@@ -850,6 +986,7 @@ export function destroyLingoSharedStateBridge() {
   remote.lastPingId = "";
   remote.myUserId = "";
   remote.seenPingIds = new Set();
+  remote.lastSeenPingAtMs = 0;
   pingStore.set(null);
   pingStatsStore.set(createEmptyPingStats());
   setMeta({

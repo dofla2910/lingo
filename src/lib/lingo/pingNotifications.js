@@ -1,3 +1,5 @@
+const WEB_PUSH_PUBLIC_KEY = String(import.meta.env.VITE_WEB_PUSH_PUBLIC_KEY || "").trim();
+
 function isHiddenDocument() {
   if (typeof document === "undefined") return false;
   return document.visibilityState === "hidden";
@@ -5,6 +7,14 @@ function isHiddenDocument() {
 
 function canUseWebNotification() {
   return typeof window !== "undefined" && "Notification" in window;
+}
+
+function shouldDeferToServiceWorkerPush() {
+  if (!WEB_PUSH_PUBLIC_KEY) return false;
+  if (typeof window === "undefined") return false;
+  if (!("serviceWorker" in navigator)) return false;
+  if (!("PushManager" in window)) return false;
+  return Notification.permission === "granted";
 }
 
 async function showWebNotification(title, body) {
@@ -78,6 +88,7 @@ async function showCapacitorLocalNotification(title, body) {
 
 export async function showPingNotification(title, body) {
   if (!isHiddenDocument()) return false;
+  if (shouldDeferToServiceWorkerPush()) return false;
   if (await showWebNotification(title, body)) return true;
   return showCapacitorLocalNotification(title, body);
 }
