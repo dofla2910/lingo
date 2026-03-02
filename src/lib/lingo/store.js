@@ -10,12 +10,12 @@ import {
   getCurrentAuthUser,
   getMemberRoomByCode,
   getMyPairRoom,
-  getSupabaseClient,
   getSupabaseConfigError,
   getUserProfilesByIds,
   isNoRowsError,
   isSchemaMissingError,
   sanitizeRoomCode,
+  supabase,
 } from "./supabaseClient.js";
 
 const stateStore = writable(createDefaultState());
@@ -533,7 +533,8 @@ export async function initLingoSharedStateBridge() {
   remote.initPromise = new Promise(async (resolve, reject) => {
     try {
       remote.readyResolve = resolve;
-      const client = getSupabaseClient();
+      const client = supabase;
+      if (!client) throw new Error("Supabase chưa sẵn sàng.");
       remote.client = client;
 
       const roomCode = await resolveRoomCode(client);

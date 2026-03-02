@@ -1,4 +1,5 @@
 import { parseDate, resizeAvatarFile } from "../utils.js";
+import { supabase } from "../supabaseClient.js";
 
 export function createProfileSlice({
   getState,
@@ -6,7 +7,6 @@ export function createProfileSlice({
   fallbackAvatar,
   sanitizeUsername,
   upsertMyUserProfile,
-  getSupabaseClient,
   toErrorMessage,
   emitToast,
   onAfterProfileSaved,
@@ -102,7 +102,8 @@ export function createProfileSlice({
 
     try {
       const payload = composeProfilePayload();
-      const client = getSupabaseClient();
+      if (!supabase) throw new Error("Supabase chưa sẵn sàng.");
+      const client = supabase;
       const row = await upsertMyUserProfile(payload, client);
       patch({
         myProfile: profileFromRow(row, getState().me),

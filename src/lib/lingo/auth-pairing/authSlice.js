@@ -3,7 +3,6 @@ import {
   getEnabledAuthProviders,
   getMyPairRoom,
   getMyUserProfile,
-  getSupabaseClient,
   getSupabaseConfigError,
   isSupabaseConfigured,
   mapRoomRowToDto,
@@ -12,6 +11,7 @@ import {
   signInWithUsernamePassword,
   signOutAuth,
   signUpWithUsernamePassword,
+  supabase,
 } from "../supabaseClient.js";
 
 export function createAuthSlice({
@@ -36,6 +36,12 @@ export function createAuthSlice({
 } = {}) {
   let authSubscription = null;
 
+  function ensureClient() {
+    if (supabase) return supabase;
+    const cfgErr = getSupabaseConfigError();
+    throw new Error(cfgErr || "Supabase chưa sẵn sàng.");
+  }
+
   async function refreshAuthPairState() {
     patch({
       loading: true,
@@ -59,7 +65,7 @@ export function createAuthSlice({
     }
 
     try {
-      const client = getSupabaseClient();
+      const client = ensureClient();
       const me = await getCurrentAuthUser(client);
 
       if (me) {
@@ -177,7 +183,7 @@ export function createAuthSlice({
 
     patch({ authBusy: true });
     try {
-      const client = getSupabaseClient();
+      const client = ensureClient();
       const mode = getState().credentialMode;
 
       if (mode === "signup") {
@@ -247,7 +253,7 @@ export function createAuthSlice({
     });
 
     try {
-      const client = getSupabaseClient();
+      const client = ensureClient();
       const redirectTo = buildAuthRedirectUrl();
       const data = await signInWithProvider(pid, { redirectTo }, client);
       patch({ providerPickerOpen: false });
@@ -274,7 +280,7 @@ export function createAuthSlice({
     clearMessages();
 
     try {
-      const client = getSupabaseClient();
+      const client = ensureClient();
       await signOutAuth(client);
       patch({
         me: null,
@@ -300,7 +306,7 @@ export function createAuthSlice({
 
   function setupAuthStateListener() {
     try {
-      const client = getSupabaseClient();
+      const client = ensureClient();
       const result = client.auth.onAuthStateChange(() => {
         refreshAuthPairState().catch((err) => {
           console.error(err);

@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "$lib/*": [
+        "src/lib/*"
+      ],
+      "$components/*": [
+        "src/lib/components/*"
+      ],
+      "$styles/*": [
+        "src/styles/*"
+      ]
+    }
+  },
+  "include": [
+    "src/**/*",
+    "vite.config.js",
+    "svelte.config.js"
+  ]
+}

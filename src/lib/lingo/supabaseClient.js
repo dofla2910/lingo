@@ -94,6 +94,14 @@ export function getSupabaseClient() {
   return supabaseSingleton;
 }
 
+export const supabase = (() => {
+  try {
+    return getSupabaseClient();
+  } catch (_err) {
+    return null;
+  }
+})();
+
 export function sanitizeRoomCode(value) {
   return String(value || "")
     .toUpperCase()

@@ -1,8 +1,19 @@
 import { defineConfig } from "vite";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { VitePWA } from "vite-plugin-pwa";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      $lib: path.resolve(__dirname, "src/lib"),
+      $components: path.resolve(__dirname, "src/lib/components"),
+      $styles: path.resolve(__dirname, "src/styles"),
+    },
+  },
   plugins: [
     svelte(),
     VitePWA({

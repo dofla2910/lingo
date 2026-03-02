@@ -1,6 +1,5 @@
 ﻿import { derived, get, writable } from "svelte/store";
 import {
-  getSupabaseClient,
   isSchemaMissingError,
   sanitizeRoomCode,
   sanitizeUsername,
@@ -187,7 +186,6 @@ export function createAuthPairingController({
     fallbackAvatar,
     sanitizeUsername,
     upsertMyUserProfile,
-    getSupabaseClient,
     toErrorMessage,
     emitToast,
     onAfterProfileSaved: async () => {

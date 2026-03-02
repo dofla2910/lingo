@@ -1,6 +1,6 @@
 ﻿<script>
   import { createEventDispatcher, onDestroy, onMount, tick } from "svelte";
-  import { getSupabaseClient } from "../lingo/supabaseClient.js";
+  import { supabase as sharedSupabase } from "$lib/lingo/supabaseClient.js";
 
   const BUCKET_NAME = "lingo-gallery";
   const dispatch = createEventDispatcher();
@@ -90,7 +90,8 @@
 
   async function initGallery() {
     try {
-      supabase = getSupabaseClient();
+      if (!sharedSupabase) throw new Error("Supabase chưa cấu hình sẵn sàng.");
+      supabase = sharedSupabase;
       await loadAlbums();
     } catch (err) {
       errorText = parseError(err, "Không thể khởi tạo Gallery.");

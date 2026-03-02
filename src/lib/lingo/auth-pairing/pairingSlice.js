@@ -1,8 +1,8 @@
 import {
   createPairRoom,
-  getSupabaseClient,
   joinPairRoom,
   mapRoomRowToDto,
+  supabase,
 } from "../supabaseClient.js";
 
 export function createPairingSlice({
@@ -18,6 +18,11 @@ export function createPairingSlice({
   onOpenWizard,
   onRoomConnect,
 } = {}) {
+  function ensureClient() {
+    if (!supabase) throw new Error("Supabase chưa sẵn sàng.");
+    return supabase;
+  }
+
   function roomUserPayload() {
     const state = getState();
     return {
@@ -62,7 +67,7 @@ export function createPairingSlice({
     });
 
     try {
-      const client = getSupabaseClient();
+      const client = ensureClient();
       const row = await createPairRoom(roomUserPayload(), client);
       const current = getState();
       const nextRoom = mapRoomRowToDto(row, current.me?.id || "");
@@ -120,7 +125,7 @@ export function createPairingSlice({
     });
 
     try {
-      const client = getSupabaseClient();
+      const client = ensureClient();
       const row = await joinPairRoom(code, roomUserPayload(), client);
       const nextRoom = mapRoomRowToDto(row, getState().me?.id || "");
       if (!nextRoom) throw new Error("Không thể nhận thông tin phòng sau khi ghép cặp.");
