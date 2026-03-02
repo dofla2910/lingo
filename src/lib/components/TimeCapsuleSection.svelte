@@ -1,12 +1,21 @@
 <script>
   import { createEventDispatcher, onDestroy, onMount } from "svelte";
-  import { fade } from "svelte/transition";
   import { sanitizeRoomCode, supabase } from "$lib/lingo/supabaseClient.js";
+  import TimeCapsuleCard from "./TimeCapsuleCard.svelte";
+  import TimeCapsuleCreateModal from "./TimeCapsuleCreateModal.svelte";
+  import TimeCapsuleReaderModal from "./TimeCapsuleReaderModal.svelte";
+  import {
+    MIN_UNLOCK_AHEAD_MS,
+    guessExtFromMime,
+    isUnlocked,
+    parseDateTimeSafe,
+    sortCapsules,
+    toLocalDateTimeInputValue,
+  } from "$lib/lingo/timeCapsuleUtils.js";
 
   const dispatch = createEventDispatcher();
   const BUCKET_NAME = "lingo-gallery";
   const FILE_PREFIX = "time-capsules";
-  const MIN_UNLOCK_AHEAD_MS = 1000;
 
   export let roomId = "";
 
@@ -41,7 +50,6 @@
   $: activeCapsuleLive = activeCapsule
     ? sortedCapsules.find((item) => item.id === activeCapsule.id) || activeCapsule
     : null;
-  $: activeLocked = activeCapsuleLive ? !isUnlocked(activeCapsuleLive, now) : false;
 
   function parseError(err, fallback = "Có lỗi xảy ra.") {
     const msg = String(err?.message || "").trim();
@@ -52,72 +60,6 @@
     if (lower.includes("bucket")) return "Không thể truy cập kho ảnh time capsule.";
     if (lower.includes("room_not_found")) return "Không tìm thấy phòng dữ liệu hiện tại.";
     return fallback;
-  }
-
-  function parseDateTimeSafe(value) {
-    const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? null : date;
-  }
-
-  function toLocalDateTimeInputValue(value) {
-    const date = parseDateTimeSafe(value) || new Date(Date.now() + 24 * 60 * 60 * 1000);
-    const localMs = date.getTime() - date.getTimezoneOffset() * 60 * 1000;
-    return new Date(localMs).toISOString().slice(0, 16);
-  }
-
-  function formatDateTime(value) {
-    const date = parseDateTimeSafe(value);
-    if (!date) return "Không hợp lệ";
-    return date.toLocaleString("vi-VN", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  }
-
-  function pad2(value) {
-    return String(Math.max(0, Number(value) || 0)).padStart(2, "0");
-  }
-
-  function remainingMs(unlockAt, currentNow = now) {
-    const date = parseDateTimeSafe(unlockAt);
-    if (!date) return 0;
-    return Math.max(0, date.getTime() - currentNow);
-  }
-
-  function countdownParts(unlockAt, currentNow = now) {
-    const ms = remainingMs(unlockAt, currentNow);
-    const totalSeconds = Math.floor(ms / 1000);
-    const days = Math.floor(totalSeconds / 86400);
-    const hours = Math.floor((totalSeconds % 86400) / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-    return { days, hours, minutes, seconds, expired: totalSeconds <= 0 };
-  }
-
-  function countdownLabel(unlockAt, currentNow = now) {
-    const part = countdownParts(unlockAt, currentNow);
-    if (part.expired) return "Đã đến giờ mở";
-    return `${pad2(part.days)} : ${pad2(part.hours)} : ${pad2(part.minutes)} : ${pad2(part.seconds)}`;
-  }
-
-  function isUnlocked(item, currentNow = now) {
-    const date = parseDateTimeSafe(item?.unlock_at);
-    if (!date) return false;
-    return currentNow >= date.getTime();
-  }
-
-  function sortCapsules(list) {
-    return [...(Array.isArray(list) ? list : [])].sort((a, b) => {
-      const aUnlock = parseDateTimeSafe(a.unlock_at)?.getTime() || 0;
-      const bUnlock = parseDateTimeSafe(b.unlock_at)?.getTime() || 0;
-      if (aUnlock !== bUnlock) return aUnlock - bUnlock;
-      const aCreated = parseDateTimeSafe(a.created_at)?.getTime() || 0;
-      const bCreated = parseDateTimeSafe(b.created_at)?.getTime() || 0;
-      return bCreated - aCreated;
-    });
   }
 
   function clearPreview() {
@@ -143,13 +85,6 @@
     }
     errorText = "";
     setSelectedFile(file);
-  }
-
-  function guessExtFromMime(type) {
-    const mime = String(type || "").toLowerCase();
-    if (mime.includes("png")) return "png";
-    if (mime.includes("webp")) return "webp";
-    return "jpg";
   }
 
   async function compressImage(file, { maxWidth = 1600, maxHeight = 1600, quality = 0.82 } = {}) {
@@ -301,8 +236,8 @@
     resetForm();
   }
 
-  function openReader(item) {
-    activeCapsule = item;
+  function openReader(event) {
+    activeCapsule = event?.detail || null;
     readerOpen = true;
   }
 
@@ -435,12 +370,7 @@
   {#if errorText}
     <div class="mt-3 rounded-xl border border-rose-200/80 bg-rose-50 px-3 py-2">
       <p class="text-sm font-medium text-rose-600">{errorText}</p>
-      <button
-        class="btn btn-soft mt-2 text-xs min-h-[34px]"
-        type="button"
-        on:click={retryFetch}
-        disabled={loading}
-      >
+      <button class="btn btn-soft mt-2 text-xs min-h-[34px]" type="button" on:click={retryFetch} disabled={loading}>
         Thử lại
       </button>
     </div>
@@ -466,170 +396,25 @@
     {:else}
       <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {#each sortedCapsules as item (item.id)}
-          <button
-            type="button"
-            class={`w-full text-left rounded-2xl border p-4 transition ${
-              isUnlocked(item, now)
-                ? "border-pink-200/90 bg-gradient-to-br from-white to-pink-50/80 shadow-[0_0_0_1px_rgba(255,185,214,0.45),0_14px_30px_rgba(255,140,184,0.18)]"
-                : "border-rose-200/80 bg-gradient-to-br from-rose-50/85 via-white to-pink-100/70"
-            }`}
-            on:click={() => openReader(item)}
-          >
-            <div class="flex items-start justify-between gap-3">
-              <div class="min-w-0">
-                <p class="text-xs font-semibold uppercase tracking-[.14em] text-pink-500/80">
-                  {isUnlocked(item, now) ? "🔓 Đã mở" : "🔒 Đang khóa"}
-                </p>
-                <h3 class="mt-1 line-clamp-2 text-base font-bold text-[color:var(--ink)]">{item.title}</h3>
-              </div>
-              <p class="pill shrink-0 text-[10px]">{formatDateTime(item.unlock_at)}</p>
-            </div>
-
-            {#if isUnlocked(item, now)}
-              <p class="mt-3 line-clamp-3 text-sm text-[color:var(--ink2)]">{item.message}</p>
-            {:else}
-              <p class="mt-3 text-sm font-semibold text-pink-600">{countdownLabel(item.unlock_at, now)}</p>
-              <p class="mt-1 text-xs text-[color:var(--ink2)]">Định dạng: Ngày : Giờ : Phút : Giây</p>
-            {/if}
-          </button>
+          <TimeCapsuleCard {item} {now} on:open={openReader} />
         {/each}
       </div>
     {/if}
   </div>
 </section>
 
-<div class={`modal ${readerOpen ? "open" : ""}`} aria-hidden={!readerOpen} on:click|self={closeReader}>
-  <div class="modal-card max-w-3xl" role="dialog" aria-modal="true" aria-labelledby="capsuleReaderTitle" tabindex="-1">
-    {#if activeCapsuleLive}
-      <div class="flex items-center justify-between border-b border-pink-100/70 px-4 py-3">
-        <div>
-          <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Hộp thư</p>
-          <h3 id="capsuleReaderTitle" class="text-lg font-bold text-[color:var(--ink)]">{activeCapsuleLive.title}</h3>
-        </div>
-        <button class="btn btn-soft text-sm" type="button" on:click={closeReader}>Đóng</button>
-      </div>
+<TimeCapsuleReaderModal open={readerOpen} capsule={activeCapsuleLive} {now} on:close={closeReader} />
 
-      <div class="max-h-[76vh] overflow-y-auto px-4 py-4">
-        <p class="text-xs text-[color:var(--ink2)]">Mở vào: {formatDateTime(activeCapsuleLive.unlock_at)}</p>
-
-        <div class="relative mt-3 overflow-hidden rounded-2xl border border-pink-100/80 bg-white/85">
-          {#if activeCapsuleLive.image_url}
-            <img
-              src={activeCapsuleLive.image_url}
-              alt={activeCapsuleLive.title}
-              class={`max-h-[52vh] w-full object-contain ${activeLocked ? "blur-md scale-[1.03]" : ""}`}
-              transition:fade={{ duration: 260 }}
-            />
-          {:else}
-            <div class={`h-56 w-full bg-gradient-to-br from-pink-100/70 via-rose-50 to-pink-200/70 ${activeLocked ? "blur-[2px]" : ""}`}></div>
-          {/if}
-
-          {#if activeLocked}
-            <div class="absolute inset-0 flex items-center justify-center bg-black/15 backdrop-blur-md">
-              <div class="rounded-2xl border border-white/60 bg-white/70 px-4 py-3 text-center">
-                <p class="text-sm font-semibold text-[color:var(--ink)]">🔒 Chưa đến thời gian mở</p>
-                <p class="mt-1 text-lg font-extrabold tracking-wider text-pink-600">{countdownLabel(activeCapsuleLive.unlock_at, now)}</p>
-                <p class="mt-1 text-xs text-[color:var(--ink2)]">Ngày : Giờ : Phút : Giây</p>
-              </div>
-            </div>
-          {/if}
-        </div>
-
-        <div class="mt-3 rounded-2xl border border-pink-100/80 bg-white/80 p-4">
-          {#if activeLocked}
-            <div class="relative overflow-hidden rounded-xl border border-white/80 bg-white/70 p-3">
-              <div class="blur-md select-none text-[color:var(--ink2)]">
-                {activeCapsuleLive.message}
-              </div>
-              <div class="absolute inset-0 bg-white/20"></div>
-            </div>
-          {:else}
-            <div transition:fade={{ duration: 320 }}>
-              <p class="whitespace-pre-wrap break-words text-sm leading-6 text-[color:var(--ink)]">{activeCapsuleLive.message}</p>
-            </div>
-          {/if}
-        </div>
-      </div>
-    {/if}
-  </div>
-</div>
-
-<div class={`modal ${formOpen ? "open" : ""}`} aria-hidden={!formOpen} on:click|self={closeCreateForm}>
-  <div class="modal-card max-w-2xl" role="dialog" aria-modal="true" aria-labelledby="capsuleCreateTitle" tabindex="-1">
-    <div class="flex items-center justify-between border-b border-pink-100/70 px-4 py-3">
-      <div>
-        <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Time Capsule</p>
-        <h3 id="capsuleCreateTitle" class="text-lg font-bold text-[color:var(--ink)]">Tạo Hộp thư thời gian</h3>
-      </div>
-      <button class="btn btn-soft text-sm" type="button" on:click={closeCreateForm} disabled={saving}>Đóng</button>
-    </div>
-
-    <form class="space-y-3 px-4 py-4" on:submit|preventDefault={submitCapsule}>
-      <div>
-        <label class="label" for="capsule_title">Tiêu đề</label>
-        <input
-          id="capsule_title"
-          class="field mt-1 text-sm"
-          type="text"
-          maxlength="120"
-          bind:value={title}
-          placeholder="Ví dụ: Lá thư cho kỷ niệm 2 năm"
-          disabled={saving}
-        />
-      </div>
-
-      <div>
-        <label class="label" for="capsule_message">Nội dung</label>
-        <textarea
-          id="capsule_message"
-          class="field mt-1 min-h-[120px] text-sm"
-          maxlength="2000"
-          bind:value={message}
-          placeholder="Viết lời nhắn gửi cho tương lai..."
-          disabled={saving}
-        ></textarea>
-      </div>
-
-      <div>
-        <label class="label" for="capsule_unlock_at">Thời điểm mở (ngày + giờ chính xác)</label>
-        <input
-          id="capsule_unlock_at"
-          class="field mt-1 text-sm"
-          type="datetime-local"
-          bind:value={unlockAtLocal}
-          min={minUnlockAtLocal}
-          disabled={saving}
-        />
-      </div>
-
-      <div>
-        <label class="label" for="capsule_image">Ảnh đính kèm (tuỳ chọn)</label>
-        <input
-          id="capsule_image"
-          bind:this={fileInputRef}
-          class="field mt-1 text-sm"
-          type="file"
-          accept="image/*"
-          capture="environment"
-          on:change={onFileChange}
-          disabled={saving}
-        />
-      </div>
-
-      {#if previewUrl}
-        <div class="overflow-hidden rounded-2xl border border-pink-100/80 bg-white/80 p-2">
-          <img src={previewUrl} alt="Xem trước ảnh time capsule" class="max-h-52 w-full object-contain" />
-        </div>
-      {/if}
-
-      <div class="flex flex-wrap justify-end gap-2 border-t border-pink-100/70 pt-3">
-        <button class="btn btn-soft text-sm min-h-[40px]" type="button" on:click={closeCreateForm} disabled={saving}>
-          Huỷ
-        </button>
-        <button class="btn btn-primary text-sm min-h-[40px]" type="submit" disabled={saving}>
-          {saving ? "Đang lưu..." : "Lưu Time Capsule"}
-        </button>
-      </div>
-    </form>
-  </div>
-</div>
+<TimeCapsuleCreateModal
+  open={formOpen}
+  {saving}
+  bind:title
+  bind:message
+  bind:unlockAtLocal
+  {minUnlockAtLocal}
+  {previewUrl}
+  bind:fileInputRef
+  on:close={closeCreateForm}
+  on:submit={submitCapsule}
+  on:filechange={(event) => onFileChange(event.detail)}
+/>
