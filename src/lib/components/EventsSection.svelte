@@ -61,7 +61,10 @@
     errorText = "";
   }
 
-  function openCreateEventModal() {
+  function openCreateEventModal(options = {}) {
+    if (options.closeListModal) {
+      closeEventsModal();
+    }
     resetForm();
     eventFormModalOpen = true;
   }
@@ -269,7 +272,8 @@
   maxWidth="max-w-2xl"
   cardClass="events-form-modal-card"
   bodyClass="events-form-body px-4 py-4"
-  showActions={true}
+  showCancelAction={true}
+  showPrimaryAction={true}
   cancelLabel="Huỷ"
   primaryLabel={editingId ? "Lưu chỉnh sửa" : "Thêm ngày đặc biệt"}
   primaryType="submit"
@@ -330,10 +334,11 @@
   cardClass="events-list-modal-card"
   headerClass="events-modal-head flex items-center justify-between border-b border-pink-100/70 px-4 py-3"
   bodyClass="events-modal-body max-h-[72vh] space-y-3 overflow-y-auto px-4 py-4"
-  showActions={true}
+  showCancelAction={true}
+  showPrimaryAction={true}
   cancelLabel="Đóng"
   primaryLabel="+ Thêm"
-  onPrimaryAction={openCreateEventModal}
+  onPrimaryAction={() => openCreateEventModal({ closeListModal: true })}
 >
   <div slot="header">
     <div>

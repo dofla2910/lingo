@@ -31,6 +31,10 @@
   labelledBy="providerPickerTitle"
   preset="modal-preset-form"
   cardStyle="max-width: 46rem;"
+  showCancelAction={true}
+  showPrimaryAction={false}
+  cancelLabel="Đóng"
+  cancelDisabled={authBusy}
 >
   <div slot="header" class="flex items-center justify-between">
     <div>

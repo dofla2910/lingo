@@ -32,7 +32,8 @@
   labelledBy="capsuleCreateTitle"
   preset="modal-preset-form"
   maxWidth="max-w-2xl"
-  showActions={true}
+  showCancelAction={true}
+  showPrimaryAction={true}
   cancelLabel="Huỷ"
   primaryLabel={saving ? "Đang lưu..." : "Lưu Time Capsule"}
   primaryType="submit"
@@ -45,7 +46,7 @@
       <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Time Capsule</p>
       <h3 id="capsuleCreateTitle" class="text-lg font-bold text-[color:var(--ink)]">Tạo Hộp thư thời gian</h3>
     </div>
-    <button class="btn btn-soft text-sm" type="button" on:click={closeModal} disabled={saving}>Đóng</button>
+    <!-- <button class="btn btn-soft text-sm" type="button" on:click={closeModal} disabled={saving}>Đóng</button> -->
   </div>
 
   <form id="timeCapsuleCreateForm" class="space-y-3" on:submit|preventDefault={submitForm}>

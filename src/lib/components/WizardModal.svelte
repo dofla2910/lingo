@@ -70,7 +70,8 @@
   labelledBy="wizardTitle"
   preset="modal-preset-form"
   cardStyle="max-width: 34rem;"
-  showActions={true}
+  showCancelAction={true}
+  showPrimaryAction={true}
   cancelLabel="Để sau"
   primaryLabel={busy ? "Đang lưu..." : "Hoàn tất"}
   cancelDisabled={!canCloseWizard && required}

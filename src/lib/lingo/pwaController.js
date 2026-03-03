@@ -9,6 +9,9 @@ const initialState = {
   isStandalone: false,
   canInstallPrompt: false,
   showIOSGuide: false,
+  updateAvailable: false,
+  updating: false,
+  lastUpdateCheckAt: 0,
 };
 
 const pwaStore = writable(initialState);
@@ -17,6 +20,8 @@ export const pwaState = { subscribe: pwaStore.subscribe };
 let inited = false;
 let deferredPrompt = null;
 let updateSW = null;
+let swRegistration = null;
+let isApplyingUpdate = false;
 let cleanupFns = [];
 
 function setState(patch) {
@@ -35,6 +40,90 @@ function detectIOSDevice() {
   const iOSUA = /iPad|iPhone|iPod/i.test(ua);
   const iPadDesktopMode = window.navigator.platform === "MacIntel" && window.navigator.maxTouchPoints > 1;
   return iOSUA || iPadDesktopMode;
+}
+
+async function checkForUpdate() {
+  if (!swRegistration) return false;
+
+  setState({ lastUpdateCheckAt: Date.now() });
+
+  try {
+    await swRegistration.update();
+  } catch (_err) {
+    return false;
+  }
+
+  const waiting = !!swRegistration.waiting;
+  if (waiting) {
+    setState({ updateAvailable: true });
+  }
+  return waiting;
+}
+
+async function applyUpdateIfAvailable() {
+  if (!updateSW || isApplyingUpdate) {
+    return { status: "busy" };
+  }
+
+  if (!swRegistration?.waiting && !get(pwaState).updateAvailable) {
+    return { status: "up_to_date" };
+  }
+
+  isApplyingUpdate = true;
+  setState({ updating: true, updateAvailable: true });
+
+  try {
+    await updateSW(true);
+    return { status: "updating" };
+  } catch (error) {
+    setState({ updating: false });
+    return { status: "error", error };
+  } finally {
+    isApplyingUpdate = false;
+  }
+}
+
+function triggerUpdateAvailable(autoApply = true) {
+  setState({ updateAvailable: true });
+
+  if (!autoApply) return;
+  if (typeof document === "undefined") return;
+  if (document.visibilityState !== "visible") return;
+
+  applyUpdateIfAvailable();
+}
+
+function bindRegistrationLifecycle(registration) {
+  if (!registration || typeof window === "undefined") return;
+
+  swRegistration = registration;
+
+  const onUpdateFound = () => {
+    const installing = registration.installing;
+    if (!installing) return;
+
+    const onStateChange = () => {
+      if (installing.state !== "installed") return;
+      if (!window.navigator.serviceWorker?.controller) return;
+      triggerUpdateAvailable(true);
+    };
+
+    installing.addEventListener("statechange", onStateChange);
+  };
+
+  const onControllerChange = () => {
+    setState({ updateAvailable: false, updating: false });
+  };
+
+  registration.addEventListener("updatefound", onUpdateFound);
+  window.navigator.serviceWorker?.addEventListener("controllerchange", onControllerChange);
+
+  cleanupFns.push(() => registration.removeEventListener("updatefound", onUpdateFound));
+  cleanupFns.push(() => window.navigator.serviceWorker?.removeEventListener("controllerchange", onControllerChange));
+
+  if (registration.waiting && window.navigator.serviceWorker?.controller) {
+    triggerUpdateAvailable(true);
+  }
 }
 
 function mountInstallLifecycle({ onInstalled } = {}) {
@@ -76,14 +165,23 @@ function mountServiceWorkerLifecycle({ onOfflineReady, onRegisterError } = {}) {
     onRegisteredSW(_swUrl, registration) {
       if (!registration) return;
 
+      bindRegistrationLifecycle(registration);
+
+      checkForUpdate().then((hasUpdate) => {
+        if (hasUpdate) triggerUpdateAvailable(true);
+      });
+
       const intervalId = window.setInterval(() => {
-        registration.update().catch(() => {});
+        checkForUpdate().then((hasUpdate) => {
+          if (hasUpdate) triggerUpdateAvailable(true);
+        });
       }, PWA_UPDATE_INTERVAL_MS);
 
       const onVisible = () => {
-        if (document.visibilityState === "visible") {
-          registration.update().catch(() => {});
-        }
+        if (document.visibilityState !== "visible") return;
+        checkForUpdate().then((hasUpdate) => {
+          if (hasUpdate) triggerUpdateAvailable(true);
+        });
       };
 
       document.addEventListener("visibilitychange", onVisible);
@@ -94,7 +192,7 @@ function mountServiceWorkerLifecycle({ onOfflineReady, onRegisterError } = {}) {
       });
     },
     onNeedRefresh() {
-      updateSW?.(true);
+      triggerUpdateAvailable(true);
     },
     onOfflineReady() {
       if (typeof onOfflineReady === "function") onOfflineReady();
@@ -154,6 +252,31 @@ export async function requestPwaInstall() {
   return { status: "unsupported" };
 }
 
+export async function requestPwaUpdate(options = {}) {
+  const { forceCheck = true, apply = true } = options;
+
+  if (!swRegistration || !updateSW) {
+    return { status: "unsupported" };
+  }
+
+  if (forceCheck) {
+    await checkForUpdate();
+  }
+
+  const snapshot = get(pwaState);
+  const hasUpdate = snapshot.updateAvailable || !!swRegistration.waiting;
+
+  if (!hasUpdate) {
+    return { status: "up_to_date" };
+  }
+
+  if (!apply) {
+    return { status: "available" };
+  }
+
+  return applyUpdateIfAvailable();
+}
+
 export function destroyPwaController() {
   cleanupFns.forEach((fn) => {
     try {
@@ -165,6 +288,8 @@ export function destroyPwaController() {
   cleanupFns = [];
   deferredPrompt = null;
   updateSW = null;
+  swRegistration = null;
+  isApplyingUpdate = false;
   inited = false;
   pwaStore.set(initialState);
 }

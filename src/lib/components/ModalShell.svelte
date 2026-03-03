@@ -30,9 +30,8 @@
   export let bodyClass = "";
   export let footerClass = "";
   export let closeOnBackdrop = true;
-  export let showActions = false;
-  export let showCancelAction = undefined;
-  export let showPrimaryAction = undefined;
+  export let showCancelAction = false;
+  export let showPrimaryAction = false;
   export let cancelLabel = "Hủy";
   export let primaryLabel = "Lưu";
   export let primaryType = "button";
@@ -51,11 +50,7 @@
   $: resolvedBodyClass = bodyClass || presetClasses.bodyClass;
   $: resolvedFooterClass = footerClass || presetClasses.footerClass;
   $: cardClasses = ["modal-card", preset, maxWidth, cardClass].filter(Boolean).join(" ");
-  $: cancelExplicit = typeof showCancelAction === "boolean";
-  $: primaryExplicit = typeof showPrimaryAction === "boolean";
-  $: resolvedShowCancelAction = cancelExplicit ? showCancelAction : showActions;
-  $: resolvedShowPrimaryAction = primaryExplicit ? showPrimaryAction : showActions;
-  $: hasResolvedActions = resolvedShowCancelAction || resolvedShowPrimaryAction;
+  $: hasResolvedActions = showCancelAction || showPrimaryAction;
 
   function requestClose() {
     close?.();
@@ -111,7 +106,7 @@
       </footer>
     {:else if hasResolvedActions}
       <footer class={resolvedFooterClass}>
-        {#if resolvedShowCancelAction}
+        {#if showCancelAction}
           <button
             type="button"
             class={cancelClass}
@@ -121,7 +116,7 @@
             {cancelLabel}
           </button>
         {/if}
-        {#if resolvedShowPrimaryAction}
+        {#if showPrimaryAction}
           <button
             type={primaryType}
             form={primaryType === "submit" && primaryForm ? primaryForm : undefined}

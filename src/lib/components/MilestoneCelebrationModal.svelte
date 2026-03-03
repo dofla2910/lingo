@@ -64,8 +64,8 @@
   preset="modal-preset-sm"
   maxWidth="max-w-xl"
   bodyClass="modal-body relative overflow-hidden px-5 py-5 sm:px-6 sm:py-6"
-  showActions={true}
   showCancelAction={false}
+  showPrimaryAction={true}
   primaryLabel="Yay!"
   onPrimaryAction={closeModal}
 >

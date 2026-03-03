@@ -114,6 +114,9 @@
   labelledBy="pairingPanelTitle"
   preset="modal-preset-form"
   cardStyle="max-width: 74rem;"
+  showCancelAction={true}
+  showPrimaryAction={false}
+  cancelLabel="Đóng"
 >
   <div slot="header" class="flex items-center justify-between">
     <div>

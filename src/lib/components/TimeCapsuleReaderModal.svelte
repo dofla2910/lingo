@@ -23,8 +23,8 @@
     labelledBy="capsuleReaderTitle"
     preset="modal-preset-form"
     maxWidth="max-w-3xl"
-    showActions={true}
     showCancelAction={false}
+    showPrimaryAction={true}
     primaryLabel="Đóng"
     onPrimaryAction={closeModal}
   >

@@ -140,7 +140,8 @@
   labelledBy="settingsTitle"
   preset="modal-preset-form"
   maxWidth="max-w-3xl"
-  showActions={true}
+  showCancelAction={true}
+  showPrimaryAction={true}
   cancelLabel="Huỷ"
   primaryLabel={busy ? "Đang lưu..." : "Lưu thay đổi"}
   cancelDisabled={busy}
@@ -152,7 +153,7 @@
       <p class="text-xs font-semibold uppercase tracking-[.16em] text-pink-500/80">Cài đặt</p>
       <h2 id="settingsTitle" class="text-lg font-bold text-[color:var(--ink)]">Cài đặt font hệ thống</h2>
     </div>
-    <button type="button" class="btn btn-soft text-sm" on:click={requestClose}>Đóng</button>
+    <!-- <button type="button" class="btn btn-soft text-sm" on:click={requestClose}>Đóng</button> -->
   </div>
 
   <div>

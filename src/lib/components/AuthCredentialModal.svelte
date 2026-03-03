@@ -52,6 +52,14 @@
   labelledBy="credentialAuthTitle"
   preset="modal-preset-form"
   cardStyle="max-width: 34rem;"
+  showCancelAction={true}
+  showPrimaryAction={true}
+  cancelLabel="Đóng"
+  primaryLabel={busy ? (mode === "signup" ? "Đang tạo tài khoản..." : "Đang đăng nhập...") : (mode === "signup" ? "Tạo tài khoản" : "Đăng nhập")}
+  primaryType="submit"
+  primaryForm="credentialAuthForm"
+  cancelDisabled={busy}
+  primaryDisabled={busy}
 >
   <div slot="header" class="flex items-center justify-between">
     <div>
@@ -63,7 +71,7 @@
     <!-- <button type="button" class="btn btn-soft text-sm" on:click={closeModal} disabled={busy}>Đóng</button> -->
   </div>
 
-  <form class="space-y-3" on:submit|preventDefault={submitForm}>
+  <form id="credentialAuthForm" class="space-y-3" on:submit|preventDefault={submitForm}>
     <div class="rounded-2xl border border-white/70 bg-white/70 p-4">
       <div class="flex items-center gap-2 text-xs">
         <button
@@ -141,14 +149,7 @@
         </div>
       {/if}
 
-      <div class="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
-        <button class="btn btn-primary text-sm w-full" type="submit" disabled={busy}>
-          {#if busy}
-            {mode === "signup" ? "Đang tạo tài khoản..." : "Đang đăng nhập..."}
-          {:else}
-            {mode === "signup" ? "Tạo tài khoản" : "Đăng nhập"}
-          {/if}
-        </button>
+      <div class="mt-4">
         <button class="btn btn-soft text-sm w-full" type="button" on:click={toggleMode} disabled={busy}>
           {mode === "signup" ? "Đã có tài khoản" : "Tạo tài khoản mới"}
         </button>

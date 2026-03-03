@@ -48,6 +48,14 @@
   labelledBy="profileModalTitle"
   preset="modal-preset-form"
   cardStyle="max-width: 38rem;"
+  showCancelAction={true}
+  showPrimaryAction={true}
+  cancelLabel="Để sau"
+  primaryLabel={busy ? "Đang lưu..." : "Lưu hồ sơ"}
+  primaryType="submit"
+  primaryForm="profileForm"
+  cancelDisabled={busy}
+  primaryDisabled={busy}
 >
   <div slot="header" class="flex items-center justify-between">
     <div>
@@ -57,7 +65,7 @@
     <!-- <button type="button" class="btn btn-soft text-sm" on:click={closeModal} disabled={busy}>Đóng</button> -->
   </div>
 
-  <form class="space-y-3" on:submit|preventDefault={submitForm}>
+  <form id="profileForm" class="space-y-3" on:submit|preventDefault={submitForm}>
     <div class="rounded-2xl border border-white/70 bg-white/70 p-4">
       <div class="flex items-start gap-3">
         <img
@@ -153,11 +161,5 @@
       <p class="rounded-xl border border-sky-200/70 bg-sky-50/80 px-3 py-2 text-sm text-sky-700">{infoText}</p>
     {/if}
 
-    <div class="flex justify-end gap-2">
-      <button class="btn btn-soft text-sm" type="button" on:click={closeModal} disabled={busy}>Để sau</button>
-      <button class="btn btn-primary text-sm" type="submit" disabled={busy}>
-        {busy ? "Đang lưu..." : "Lưu hồ sơ"}
-      </button>
-    </div>
   </form>
 </ModalShell>

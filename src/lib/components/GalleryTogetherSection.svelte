@@ -670,6 +670,11 @@
   labelledBy="albumPhotosTitle"
   preset="modal-preset-gallery"
   maxWidth="max-w-6xl"
+  showCancelAction={true}
+  showPrimaryAction={true}
+  cancelLabel="Đóng"
+  primaryLabel="+ Thêm ảnh"
+  onPrimaryAction={openUploadModal}
 >
   <div slot="header">
     <div>
@@ -703,8 +708,6 @@
           Kiểu Locket
         </button>
       </div>
-      <button type="button" class="btn btn-primary text-sm min-h-[40px] w-full sm:w-auto" on:click={openUploadModal}>+ Thêm ảnh</button>
-      <button type="button" class="btn btn-soft text-sm min-h-[40px] w-full sm:w-auto" on:click={closeAlbumModal}>Đóng</button>
     </div>
   </div>
 
@@ -784,7 +787,8 @@
   labelledBy="createAlbumTitle"
   preset="modal-preset-sm"
   maxWidth="max-w-lg"
-  showActions={true}
+  showCancelAction={true}
+  showPrimaryAction={true}
   cancelLabel="Hủy"
   primaryLabel={createBusy ? "Đang tạo..." : "Tạo album"}
   primaryType="submit"
@@ -815,7 +819,8 @@
   labelledBy="uploadPhotoTitle"
   preset="modal-preset-gallery"
   cardClass="relative max-w-xl"
-  showActions={true}
+  showCancelAction={true}
+  showPrimaryAction={true}
   cancelLabel="Hủy"
   primaryLabel={uploadBusy ? "Đang tải..." : "Tải ảnh lên"}
   primaryDisabled={uploadBusy}

@@ -24,8 +24,8 @@
   labelledBy="iosInstallTitle"
   preset="modal-preset-sm"
   maxWidth="max-w-md"
-  showActions={true}
   showCancelAction={false}
+  showPrimaryAction={true}
   primaryLabel="Đã hiểu"
   onPrimaryAction={closeModal}
 >
