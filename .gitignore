@@ -6,4 +6,5 @@ server
 android/key.properties
 android/*.jks
 android/*.keystore
-supabase/.temp.serena/
+supabase/.temp
+.serena/
